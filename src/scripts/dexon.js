@@ -1,6 +1,18 @@
 import { fromMasterSeed } from 'ethereumjs-wallet/hdkey'
 import { mnemonicToSeed } from 'bip39'
-
+import { ethers } from 'ethers'
+import {
+  NonceTxMiddleware,
+  SignedEthTxMiddleware,
+  CryptoUtils,
+  Client,
+  LoomProvider,
+  Address,
+  LocalAddress,
+  Contracts,
+  EthersSigner,
+  createDefaultTxMiddleware
+} from 'loom-js'
 
 class EventEmitter{
   constructor(){
@@ -132,6 +144,15 @@ class Dexon extends EventEmitter {
     this.__dett = null
     this.__selectedAddress = null
     this.__networkId = null
+    // Loom
+    this.chainId = 'extdev-plasma-us1'
+    this.writeUrl = 'ws://extdev-plasma-us1.dappchains.com/websocket'
+    this.readUrl = 'ws://extdev-plasma-us1.dappchains.com/queryws'
+    this.ethAddress = null
+    this.client = null
+    this.loomProvider = null
+    this.publicKey = null
+    // Loom
 
     const providerDetectList = [
       {
@@ -158,11 +179,41 @@ class Dexon extends EventEmitter {
     this.identityManager = identityManager || new IdentityManager(this.dexon)
   }
 
+  async initLoom() {
+    const privateKey = CryptoUtils.generatePrivateKey()
+    this.publicKey = CryptoUtils.publicKeyFromPrivateKey(privateKey)
+    this.client = new Client(this.chainId, this.writeUrl, this.readUrl)
+    const ethersProvider = new ethers.providers.Web3Provider(this.dexonWeb3.currentProvider)
+    const signer = ethersProvider.getSigner()
+    this.ethAddress = await signer.getAddress()
+    const to = new Address('eth', LocalAddress.fromHexString(this.ethAddress))
+    const from = new Address(this.client.chainId, LocalAddress.fromPublicKey(this.publicKey))
+    this.client.txMiddleware = createDefaultTxMiddleware(this.client, privateKey)
+    const addressMapper = await Contracts.AddressMapper.createAsync(this.client, from)
+
+    if (await addressMapper.hasMappingAsync(to).catch(() => { return true })) {
+      console.log('Mapping already exists.')
+    } else {
+      console.log('Adding a new mapping.')
+      const ethersSigner = new EthersSigner(signer)
+      await addressMapper.addIdentityMappingAsync(from, to, ethersSigner)
+    }
+
+    this.loomProvider = new LoomProvider(this.client, privateKey)
+    this.loomProvider.setMiddlewaresForAddress(to.local.toString(), [
+      new NonceTxMiddleware(to, this.client),
+      new SignedEthTxMiddleware(signer)
+    ])
+    return true
+  }
+
   init() {
     if (!this.dexon) return
 
     this.dexonWeb3 = new Web3(this.dexon)
 
+    /*
+    console.log(this.dexonWeb3.currentProvider.publicConfigStore)
     if (this.dexonWeb3.currentProvider.publicConfigStore) {
       this.dexonWeb3.currentProvider.publicConfigStore.on('update', (data) => {
         if ('networkVersion' in data)
@@ -174,7 +225,7 @@ class Dexon extends EventEmitter {
       const poll = async () => {
         const networkID = await this.dexonWeb3.eth.net.getId()
         this.networkId = networkID
-        if (networkID === 237) {
+        if (networkID === 1 || networkID === 4) {
           const accounts = await this.dexonWeb3.eth.getAccounts()
           this.selectedAddress = accounts.length > 0 ? accounts[0] : ''
         } else {
@@ -188,6 +239,25 @@ class Dexon extends EventEmitter {
       poll()
       setInterval(poll, 1000)
     }
+    */
+    
+    const poll = async () => {
+      const networkID = await this.dexonWeb3.eth.net.getId()
+      this.networkId = networkID
+      if (networkID === 1 || networkID === 4) {
+        const accounts = await this.dexonWeb3.eth.getAccounts()
+        this.selectedAddress = accounts.length > 0 ? accounts[0] : ''
+        await this.initLoom()
+      } else {
+        const error = new Error('Wrong network')
+        error.code = 'wrong-network'
+        this.emit('error', error)
+        return
+      }
+    }
+
+    poll()
+    setInterval(poll, 1000)
   }
 
   login(){
