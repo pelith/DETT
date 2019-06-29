@@ -247,7 +247,6 @@ class Dexon extends EventEmitter {
       if (networkID === 1 || networkID === 4) {
         const accounts = await this.dexonWeb3.eth.getAccounts()
         this.selectedAddress = accounts.length > 0 ? accounts[0] : ''
-        await this.initLoom()
       } else {
         const error = new Error('Wrong network')
         error.code = 'wrong-network'
@@ -258,6 +257,7 @@ class Dexon extends EventEmitter {
 
     poll()
     setInterval(poll, 1000)
+    this.initLoom()
   }
 
   login(){
