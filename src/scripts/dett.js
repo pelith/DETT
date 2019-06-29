@@ -1,4 +1,17 @@
 import {awaitTx, parseText} from './utils'
+import { ethers } from 'ethers'
+import {
+  NonceTxMiddleware,
+  SignedEthTxMiddleware,
+  CryptoUtils,
+  Client,
+  LoomProvider,
+  Address,
+  LocalAddress,
+  Contracts,
+  EthersSigner,
+  createDefaultTxMiddleware
+} from 'loom-js'
 
 let web3 = null
 
@@ -9,15 +22,15 @@ const ABIBBSEdit = [{"constant":false,"inputs":[{"name":"origin","type":"bytes32
 const ABIBBSPB = [{"constant":!0,"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"name":"","type":"address"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!1,"inputs":[{"name":"to","type":"address"},{"name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!1,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!1,"inputs":[{"name":"_lobby","type":"address"},{"name":"_isLobby","type":"bool"}],"name":"setLobby","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!0,"inputs":[{"name":"","type":"address"}],"name":"migrated","outputs":[{"name":"","type":"bool"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!1,"inputs":[{"name":"meta","type":"string"}],"name":"setMeta","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!1,"inputs":[{"name":"who","type":"address"},{"name":"ref","type":"address"}],"name":"setReferrerByAddress","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!0,"inputs":[],"name":"wallet","outputs":[{"name":"","type":"address"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!0,"inputs":[{"name":"who","type":"address"}],"name":"getPlayer","outputs":[{"name":"","type":"bytes32"},{"name":"","type":"uint256"},{"name":"","type":"uint256"},{"name":"","type":"address"},{"name":"","type":"address"},{"name":"","type":"string"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!1,"inputs":[{"name":"who","type":"address"},{"name":"amount","type":"uint256"}],"name":"addExp","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!0,"inputs":[{"name":"who","type":"address"}],"name":"getLV","outputs":[{"name":"","type":"uint256"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!0,"inputs":[{"name":"_tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"name":"","type":"address"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!1,"inputs":[{"name":"_fee","type":"uint256"}],"name":"setFee","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!0,"inputs":[{"name":"name","type":"string"}],"name":"checkIfNameValid","outputs":[{"name":"","type":"bool"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!0,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!1,"inputs":[{"name":"name","type":"string"}],"name":"useAnotherName","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!0,"inputs":[{"name":"","type":"bytes32"}],"name":"name2addr","outputs":[{"name":"","type":"address"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!0,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!1,"inputs":[{"name":"link","type":"address"}],"name":"setLink","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!1,"inputs":[{"name":"to","type":"address"},{"name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!1,"inputs":[{"name":"newPlayerBook","type":"address"}],"name":"migrate","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!1,"inputs":[{"name":"who","type":"address"},{"name":"ref","type":"bytes32"}],"name":"setReferrerByName","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!0,"inputs":[{"name":"","type":"address"},{"name":"","type":"bytes32"}],"name":"isMyName","outputs":[{"name":"","type":"bool"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!0,"inputs":[],"name":"fee","outputs":[{"name":"","type":"uint256"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!1,"inputs":[{"name":"_wallet","type":"address"}],"name":"setWallet","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"constant":!0,"inputs":[{"name":"","type":"address"}],"name":"players","outputs":[{"name":"name","type":"bytes32"},{"name":"names","type":"uint256"},{"name":"exp","type":"uint256"},{"name":"referrer","type":"address"},{"name":"link","type":"address"},{"name":"meta","type":"string"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!0,"inputs":[{"name":"owner","type":"address"},{"name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"name":"","type":"bool"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!0,"inputs":[{"name":"","type":"address"}],"name":"isLobby","outputs":[{"name":"","type":"bool"}],"payable":!1,"stateMutability":"view","type":"function"},{"constant":!1,"inputs":[{"name":"name","type":"string"}],"name":"register","outputs":[],"payable":!0,"stateMutability":"payable","type":"function"},{"constant":!1,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":!1,"stateMutability":"nonpayable","type":"function"},{"anonymous":!1,"inputs":[{"indexed":!0,"name":"playerAddress","type":"address"},{"indexed":!0,"name":"playerName","type":"bytes32"}],"name":"SetNewName","type":"event"},{"anonymous":!1,"inputs":[{"indexed":!0,"name":"_from","type":"address"},{"indexed":!0,"name":"_to","type":"address"},{"indexed":!0,"name":"_tokenId","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":!1,"inputs":[{"indexed":!0,"name":"_owner","type":"address"},{"indexed":!0,"name":"_approved","type":"address"},{"indexed":!0,"name":"_tokenId","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":!1,"inputs":[{"indexed":!0,"name":"_owner","type":"address"},{"indexed":!0,"name":"_operator","type":"address"},{"indexed":!1,"name":"_approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},{"anonymous":!1,"inputs":[{"indexed":!0,"name":"previousOwner","type":"address"},{"indexed":!0,"name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"}]
 const ABICache = [{"constant":false,"inputs":[{"name":"milestone","type":"bytes32"}],"name":"addMilestone","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"clearMilestone","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"long","type":"bytes32"},{"name":"short","type":"bytes32"}],"name":"link","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"anonymous":false,"inputs":[{"indexed":false,"name":"long","type":"bytes32"},{"indexed":false,"name":"short","type":"bytes32"}],"name":"Link","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"previousOwner","type":"address"},{"indexed":true,"name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"constant":true,"inputs":[],"name":"getMilestones","outputs":[{"name":"","type":"bytes32[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"links","outputs":[{"name":"","type":"bytes32"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"}]
 
-const BBSContract = '0x663002C4E41E5d04860a76955A7B9B8234475952'
-const BBSExtContract = '0xec368ba43010056abb3e5afd01957ea1fdbd3d8f'
-const BBSAdminContract = '0x88eb672e01c1a2a6f398b9d52c7dab5f87ca8c2c'
-const BBSEditContract = '0x826cb3e5aa484869d9511aad3ead74d382608147'
-const BBSPBContract = '0xb6bE4987F1f7448FCe4abB06f23A571EFB4BaF10'
-const BBSCacheContract = '0xff9cae0ecec479b87472df77b1f5d8d182ab7658'
-const BBSOriginalAddress = '0x9b985Ef27464CF25561f0046352E03a09d2C2e0C'
+const BBSContract = '0x2a59d1e5016f985a566242f88199556e0dc04de3'
+const BBSExtContract = '0x455f5b05646b00135256024e34aeab75314c15ff'
+const BBSAdminContract = '0xd20eb5ac22e864dc026cf018bedea6a0fac7eabc'
+const BBSEditContract = '0x74c51abf4acdf41e4a0ac91a3de1bf83c6e77e29'
+const BBSPBContract = '0xfc6eae48ab95fc9b82b3cdf3f11d5e7d29ff74aa'
+const BBSCacheContract = '0x97804e70c8ec75c09dba415cb4a2be174671a1dd'
+const BBSOriginalAddress = '0x9b985Ef27464CF25561f0046352E03a09d2C2e0C' // not used
 
-const fromBlock = '1170000'
+const fromBlock = '7172020'
 const titleLength = 40
 const commentLength = 56
 const perPageLength = 20
@@ -136,14 +149,31 @@ class Dett {
 
     // XXX: should it pass in only the provider?
     this.__web3Injected = _dettweb3
+    const networkId = 'extdev-plasma-us1'
+    const writeUrl = 'ws://extdev-plasma-us1.dappchains.com/websocket'
+    const readUrl = 'ws://extdev-plasma-us1.dappchains.com/queryws'
+    this.client = new Client(networkId, writeUrl, readUrl)
+    this.privateKey = CryptoUtils.generatePrivateKey()
+    this.publicKey = CryptoUtils.publicKeyFromPrivateKey(this.privateKey)
+    _dettweb3.currentProvider.isMetaMask = true
+    const ethersProvider = new ethers.providers.Web3Provider(_dettweb3.currentProvider)
+    const signer = ethersProvider.getSigner()
+    this.account = await signer.getAddress()
+    const to = new Address('eth', LocalAddress.fromHexString(this.account))
+    const loomProvider = new LoomProvider(this.client, this.privateKey)
+    loomProvider.callerChainId = 'eth'
+    loomProvider.setMiddlewaresForAddress(to.local.toString(), [
+      new NonceTxMiddleware(to, this.client),
+      new SignedEthTxMiddleware(signer)
+    ])
 
-    web3 = new _Web3(new _Web3.providers.WebsocketProvider('wss://mainnet-rpc.dexon.org/ws'))
+    web3 = new _Web3(loomProvider)
     // Todo : Should be env
     // this.cacheweb3 = new _Web3(new _Web3.providers.WebsocketProvider('wss://mainnet-rpc.dexon.org/ws'))
     this.cacheweb3 = web3
 
     this.__contracts = this.__initContractsWith(web3)
-    this.__contractsForInjectedWeb3 = this.__initContractsWith(_dettweb3)
+    this.__contractsForInjectedWeb3 = this.__initContractsWith(web3)
 
     this.BBS = new web3.eth.Contract(ABIBBS, BBSContract)
     this.BBSExt = new web3.eth.Contract(ABIBBSExt, BBSExtContract)
@@ -190,6 +220,7 @@ class Dett {
     const _toBlock = toBlock ? toBlock.split('-')[0] : 'latest'
 
     this.BBSEvents = await this.BBS.getPastEvents('Posted', {fromBlock : _fromBlock, toBlock: _toBlock})
+    console.log(this.BBSEvents)
 
     if (fromBlock)
       this.BBSEvents.splice(0, (+fromBlock.split('-')[1]) + 1)
