@@ -184,16 +184,15 @@ class Dexon extends EventEmitter {
     const privateKey = loom.CryptoUtils.generatePrivateKey()
     this.publicKey = loom.CryptoUtils.publicKeyFromPrivateKey(privateKey)
     this.client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
-    console.log(this.dexonWeb3.currentProvider)
+    // console.log(this.dexonWeb3.currentProvider)
     const ethersProvider = new ethers.providers.Web3Provider(this.dexonWeb3.currentProvider)
     const signer = ethersProvider.getSigner()
-    // this.ethAddress = await signer.getAddress()
+    this.ethAddress = await signer.getAddress()
     const to = new loom.Address('eth', loom.LocalAddress.fromHexString(this.ethAddress))
     const from = new loom.Address(this.client.chainId, loom.LocalAddress.fromPublicKey(this.publicKey))
-    this.client.txMiddleware = loom.createDefaultTxMiddleware(this.client, privateKey)
     const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, from)
 
-    if (await addressMapper.hasMappingAsync(to).catch(() => { return true })) {
+    if (await addressMapper.hasMappingAsync(to)) {
       console.log('Mapping already exists.')
     } else {
       console.log('Adding a new mapping.')
@@ -201,11 +200,6 @@ class Dexon extends EventEmitter {
       await addressMapper.addIdentityMappingAsync(from, to, ethersSigner)
     }
 
-    this.loomProvider = new loom.LoomProvider(this.client, privateKey)
-    this.loomProvider.setMiddlewaresForAddress(to.local.toString(), [
-      new loom.NonceTxMiddleware(to, this.client),
-      new loom.SignedEthTxMiddleware(signer)
-    ])
     return true
   }
 
@@ -249,6 +243,8 @@ class Dexon extends EventEmitter {
       if (networkID === 1 || networkID === 4) {
         const accounts = await this.dexonWeb3.eth.getAccounts()
         this.selectedAddress = accounts.length > 0 ? accounts[0] : ''
+        if (this.selectedAddress != '' && this.selectedAddress != this.ethAddress)
+          await this.initLoom()
       } else {
         const error = new Error('Wrong network')
         error.code = 'wrong-network'
@@ -259,7 +255,7 @@ class Dexon extends EventEmitter {
 
     poll()
     setInterval(poll, 1000)
-    this.initLoom()
+    
   }
 
   login(){

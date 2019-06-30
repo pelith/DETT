@@ -37,7 +37,6 @@
         "sass": "^1.20.1"
     },
     "dependencies": {
-        "@babel/polyfill": "^7.4.4",
         "@babel/runtime": "^7.4.4",
         "bip39": "^3.0.2",
         "bootstrap": "^4.3.1",

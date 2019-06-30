@@ -1,17 +1,17 @@
 import {awaitTx, parseText} from './utils'
 import { ethers } from 'ethers'
-import {
-  NonceTxMiddleware,
-  SignedEthTxMiddleware,
-  CryptoUtils,
-  Client,
-  LoomProvider,
-  Address,
-  LocalAddress,
-  Contracts,
-  EthersSigner,
-  createDefaultTxMiddleware
-} from 'loom-js'
+// import {
+//   NonceTxMiddleware,
+//   SignedEthTxMiddleware,
+//   CryptoUtils,
+//   Client,
+//   LoomProvider,
+//   Address,
+//   LocalAddress,
+//   Contracts,
+//   EthersSigner,
+//   createDefaultTxMiddleware
+// } from 'loom-js'
 
 let web3 = null
 
@@ -53,6 +53,7 @@ class PostBase {
       link: data[4],
       meta: data[5],
     }))
+    .catch(e =>{ return '' })
     cache.set(addr, promise)
     return promise
   }
@@ -61,10 +62,10 @@ class PostBase {
 PostBase._metaCache = new Map()
 
 class Article extends PostBase {
-  constructor(_transaction) {
+  constructor(_transaction, _returnValues) {
     super()
     this.transaction = _transaction
-    this.rawContent = web3.utils.hexToUtf8('0x' + this.transaction.input.slice(138))
+    this.rawContent = _returnValues.content
     this.titleMatch = false
     this.title = this.getTitle()
     this.content = this.getContent()
@@ -146,25 +147,27 @@ class Dett {
 
   async init(_dettweb3, _Web3) {
     if (!_Web3) return console.error("Can't find Web3.")
+    if (!window.loom) return console.error("Can't find Loom.")
 
     // XXX: should it pass in only the provider?
     this.__web3Injected = _dettweb3
     const networkId = 'extdev-plasma-us1'
     const writeUrl = 'ws://extdev-plasma-us1.dappchains.com/websocket'
     const readUrl = 'ws://extdev-plasma-us1.dappchains.com/queryws'
-    this.client = new Client(networkId, writeUrl, readUrl)
-    this.privateKey = CryptoUtils.generatePrivateKey()
-    this.publicKey = CryptoUtils.publicKeyFromPrivateKey(this.privateKey)
+    this.client = new loom.Client(networkId, writeUrl, readUrl)
+    this.privateKey = loom.CryptoUtils.generatePrivateKey()
+    this.publicKey = loom.CryptoUtils.publicKeyFromPrivateKey(this.privateKey)
     _dettweb3.currentProvider.isMetaMask = true
     const ethersProvider = new ethers.providers.Web3Provider(_dettweb3.currentProvider)
     const signer = ethersProvider.getSigner()
     this.account = await signer.getAddress()
-    const to = new Address('eth', LocalAddress.fromHexString(this.account))
-    const loomProvider = new LoomProvider(this.client, this.privateKey)
+    const to = new loom.Address('eth', loom.LocalAddress.fromHexString(this.account))
+    this.client.txMiddleware = loom.createDefaultTxMiddleware(this.client, this.privateKey)
+    const loomProvider = new loom.LoomProvider(this.client, this.privateKey)
     loomProvider.callerChainId = 'eth'
     loomProvider.setMiddlewaresForAddress(to.local.toString(), [
-      new NonceTxMiddleware(to, this.client),
-      new SignedEthTxMiddleware(signer)
+      new loom.NonceTxMiddleware(to, this.client),
+      new loom.SignedEthTxMiddleware(signer)
     ])
 
     web3 = new _Web3(loomProvider)
@@ -230,22 +233,20 @@ class Dett {
 
     return this.BBSEvents.map(async (event) => {
       const [article, votes, banned] = await Promise.all([
-        this.getArticle(event.transactionHash, false),
-        this.getVotes(event.transactionHash),
-        this.getBanned(event.transactionHash),
+        this.getArticle(event.transactionHash, event.returnValues, false),
+        // this.getVotes(event.transactionHash),
+        // this.getBanned(event.transactionHash),
       ])
 
       return [article, votes, banned]
     })
   }
 
-  async getArticle(tx, checkEdited){
+  async getArticle(tx, returnValues, checkEdited){
     const transaction = await web3.eth.getTransaction(tx)
+    console.log(transaction)
 
-    // check transaction to address is bbs contract
-    if (!this.isDettTx(transaction.to)) return null
-
-    const article = new Article(transaction)
+    const article = new Article(transaction, returnValues)
     await article.init()
 
     if (checkEdited) {
