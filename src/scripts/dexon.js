@@ -1,18 +1,18 @@
 import { fromMasterSeed } from 'ethereumjs-wallet/hdkey'
 import { mnemonicToSeed } from 'bip39'
 import { ethers } from 'ethers'
-import {
-  NonceTxMiddleware,
-  SignedEthTxMiddleware,
-  CryptoUtils,
-  Client,
-  LoomProvider,
-  Address,
-  LocalAddress,
-  Contracts,
-  EthersSigner,
-  createDefaultTxMiddleware
-} from 'loom-js'
+// import {
+//   NonceTxMiddleware,
+//   SignedEthTxMiddleware,
+//   CryptoUtils,
+//   Client,
+//   LoomProvider,
+//   Address,
+//   LocalAddress,
+//   Contracts,
+//   EthersSigner,
+//   createDefaultTxMiddleware
+// } from 'loom-js'
 
 class EventEmitter{
   constructor(){
@@ -180,29 +180,31 @@ class Dexon extends EventEmitter {
   }
 
   async initLoom() {
-    const privateKey = CryptoUtils.generatePrivateKey()
-    this.publicKey = CryptoUtils.publicKeyFromPrivateKey(privateKey)
-    this.client = new Client(this.chainId, this.writeUrl, this.readUrl)
+    if (!window.loom) return
+    const privateKey = loom.CryptoUtils.generatePrivateKey()
+    this.publicKey = loom.CryptoUtils.publicKeyFromPrivateKey(privateKey)
+    this.client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
+    console.log(this.dexonWeb3.currentProvider)
     const ethersProvider = new ethers.providers.Web3Provider(this.dexonWeb3.currentProvider)
     const signer = ethersProvider.getSigner()
-    this.ethAddress = await signer.getAddress()
-    const to = new Address('eth', LocalAddress.fromHexString(this.ethAddress))
-    const from = new Address(this.client.chainId, LocalAddress.fromPublicKey(this.publicKey))
-    this.client.txMiddleware = createDefaultTxMiddleware(this.client, privateKey)
-    const addressMapper = await Contracts.AddressMapper.createAsync(this.client, from)
+    // this.ethAddress = await signer.getAddress()
+    const to = new loom.Address('eth', loom.LocalAddress.fromHexString(this.ethAddress))
+    const from = new loom.Address(this.client.chainId, loom.LocalAddress.fromPublicKey(this.publicKey))
+    this.client.txMiddleware = loom.createDefaultTxMiddleware(this.client, privateKey)
+    const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, from)
 
     if (await addressMapper.hasMappingAsync(to).catch(() => { return true })) {
       console.log('Mapping already exists.')
     } else {
       console.log('Adding a new mapping.')
-      const ethersSigner = new EthersSigner(signer)
+      const ethersSigner = new loom.EthersSigner(signer)
       await addressMapper.addIdentityMappingAsync(from, to, ethersSigner)
     }
 
-    this.loomProvider = new LoomProvider(this.client, privateKey)
+    this.loomProvider = new loom.LoomProvider(this.client, privateKey)
     this.loomProvider.setMiddlewaresForAddress(to.local.toString(), [
-      new NonceTxMiddleware(to, this.client),
-      new SignedEthTxMiddleware(signer)
+      new loom.NonceTxMiddleware(to, this.client),
+      new loom.SignedEthTxMiddleware(signer)
     ])
     return true
   }
