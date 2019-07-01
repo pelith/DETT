@@ -7,7 +7,7 @@ let registerFee = '0'
 
 const render = (_account) => {
   if (_account){
-    dett.getMetaByAddress(_account).then(meta => {
+    dett.getMetaByAddress().then(meta => {
       const {name} = meta
       $('#main-content-nickname').text(name.length ? name : '(未註冊)')
       $('.member-zone').show()

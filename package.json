@@ -44,7 +44,6 @@
         "cloudflare-purge-cache": "^1.1.0",
         "core-js": "^2.6.5",
         "ethereumjs-wallet": "^0.6.3",
-        "ethers": "^4.0.32",
         "linkify-it": "^2.1.0",
         "loom-js": "^1.55.0",
         "nunjucks": "^3.0.0",

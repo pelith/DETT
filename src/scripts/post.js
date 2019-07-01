@@ -15,7 +15,7 @@ const check = () => { return (checkContent() && checkTitle()) }
 const render = async (_account) => {
   dett.account = _account
   if (_account){
-    const nickname = await dett.getMetaByAddress(_account)
+    const nickname = await dett.getMetaByAddress()
     if (nickname.name) {
       $("#bbs-user").text(parseUser(nickname.name))
     } else {

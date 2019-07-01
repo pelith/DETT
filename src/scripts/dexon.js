@@ -1,18 +1,5 @@
 import { fromMasterSeed } from 'ethereumjs-wallet/hdkey'
 import { mnemonicToSeed } from 'bip39'
-import { ethers } from 'ethers'
-// import {
-//   NonceTxMiddleware,
-//   SignedEthTxMiddleware,
-//   CryptoUtils,
-//   Client,
-//   LoomProvider,
-//   Address,
-//   LocalAddress,
-//   Contracts,
-//   EthersSigner,
-//   createDefaultTxMiddleware
-// } from 'loom-js'
 
 class EventEmitter{
   constructor(){

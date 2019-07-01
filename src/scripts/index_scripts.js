@@ -247,7 +247,7 @@ const directDisplay = (article, votes, banned) => {
   $('.r-list-container.action-bar-margin.bbs-screen').append(elem)
 
   const date = new Date(article.timestamp)
-  console.log(date)
+  // console.log(date)
   $(elem).find('.date').text((date.getMonth()+1)+'/'+(''+date.getDate()).padStart(2, '0'))
                        .attr('title', date.toLocaleString())
 

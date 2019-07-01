@@ -1,17 +1,4 @@
 import {awaitTx, parseText} from './utils'
-import { ethers } from 'ethers'
-// import {
-//   NonceTxMiddleware,
-//   SignedEthTxMiddleware,
-//   CryptoUtils,
-//   Client,
-//   LoomProvider,
-//   Address,
-//   LocalAddress,
-//   Contracts,
-//   EthersSigner,
-//   createDefaultTxMiddleware
-// } from 'loom-js'
 
 let web3 = null
 
@@ -30,6 +17,7 @@ const BBSPBContract = '0xfc6eae48ab95fc9b82b3cdf3f11d5e7d29ff74aa'
 const BBSCacheContract = '0x97804e70c8ec75c09dba415cb4a2be174671a1dd'
 const BBSOriginalAddress = '0x9b985Ef27464CF25561f0046352E03a09d2C2e0C' // not used
 
+const defaultCaller = '0x7c9CB363cf3202fC3BC8CDC08daAfC8f54DD12E1'
 const fromBlock = '7172020'
 const titleLength = 40
 const commentLength = 56
@@ -44,7 +32,7 @@ class PostBase {
     }
 
     const BBSPB = new web3.eth.Contract(ABIBBSPB, BBSPBContract)
-    const promise = BBSPB.methods.getPlayer(address).call()
+    const promise = BBSPB.methods.getPlayer(address).call({ from: defaultCaller })
     .then(data => ({
       name: web3.utils.hexToUtf8(data[0]),
       names: +data[1],
@@ -53,7 +41,6 @@ class PostBase {
       link: data[4],
       meta: data[5],
     }))
-    .catch(e =>{ return '' })
     cache.set(addr, promise)
     return promise
   }
@@ -143,6 +130,7 @@ class Dett {
     this.commentLength = commentLength
     this.titleLength = titleLength
     this.perPageLength = perPageLength
+    this.loomAddr = null
   }
 
   async init(_dettweb3, _Web3) {
@@ -169,6 +157,12 @@ class Dett {
       new loom.NonceTxMiddleware(to, this.client),
       new loom.SignedEthTxMiddleware(signer)
     ])
+
+    const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, to)
+    if (await addressMapper.hasMappingAsync(to)) {
+      const mapping = await addressMapper.getMappingAsync(to)
+      this.loomAddr = mapping.to.local.toString()
+    }
 
     web3 = new _Web3(loomProvider)
     // Todo : Should be env
@@ -223,7 +217,7 @@ class Dett {
     const _toBlock = toBlock ? toBlock.split('-')[0] : 'latest'
 
     this.BBSEvents = await this.BBS.getPastEvents('Posted', {fromBlock : _fromBlock, toBlock: _toBlock})
-    console.log(this.BBSEvents)
+    // console.log(this.BBSEvents)
 
     if (fromBlock)
       this.BBSEvents.splice(0, (+fromBlock.split('-')[1]) + 1)
@@ -234,8 +228,8 @@ class Dett {
     return this.BBSEvents.map(async (event) => {
       const [article, votes, banned] = await Promise.all([
         this.getArticle(event.transactionHash, event.returnValues, false),
-        // this.getVotes(event.transactionHash),
-        // this.getBanned(event.transactionHash),
+        this.getVotes(event.transactionHash),
+        this.getBanned(event.transactionHash),
       ])
 
       return [article, votes, banned]
@@ -244,7 +238,7 @@ class Dett {
 
   async getArticle(tx, returnValues, checkEdited){
     const transaction = await web3.eth.getTransaction(tx)
-    console.log(transaction)
+    // console.log(transaction)
 
     const article = new Article(transaction, returnValues)
     await article.init()
@@ -259,19 +253,19 @@ class Dett {
 
   async getVotes(tx){
     const [upvotes, downvotes] = await Promise.all([
-      this.BBSExt.methods.upvotes(tx).call(),
-      this.BBSExt.methods.downvotes(tx).call(),
+      this.BBSExt.methods.upvotes(tx).call({ from: defaultCaller }),
+      this.BBSExt.methods.downvotes(tx).call({ from: defaultCaller }),
     ])
 
     return upvotes - downvotes
   }
 
   async getVoted(tx){
-    return await this.BBSExt.methods.voted(this.account, tx).call()
+    return await this.BBSExt.methods.voted(this.account, tx).call({ from: defaultCaller })
   }
 
   async getBanned(tx){
-    return await this.BBSAdmin.methods.banned(tx).call()
+    return await this.BBSAdmin.methods.banned(tx).call({ from: defaultCaller })
   }
 
   async getComments(tx){
@@ -294,7 +288,7 @@ class Dett {
   }
 
   getRegisterFee(_) {
-    return this.BBSPB.methods.fee().call()
+    return this.BBSPB.methods.fee().call({ from: defaultCaller })
   }
 
   getRegisterHistory() {
@@ -328,8 +322,8 @@ class Dett {
     // handle the error elsewhere
   }
 
-  getMetaByAddress(address) {
-    return PostBase.getAuthorMeta(address)
+  getMetaByAddress() {
+    return PostBase.getAuthorMeta(this.loomAddr)
   }
 
   async reply(tx, replyType, content) {
@@ -395,7 +389,7 @@ class Dett {
 
   async getOriginalTx(shortLink){
     const hex = this.cacheweb3.utils.padLeft(this.cacheweb3.utils.toHex(shortLink), 64)
-    const tx = await this.BBSCache.methods.links(hex).call()
+    const tx = await this.BBSCache.methods.links(hex).call({ from: defaultCaller })
     return tx
   }
 

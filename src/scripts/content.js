@@ -15,7 +15,7 @@ const render = async (_account) => {
     // only show reply btn at first time
     if (!$("#reply-user").text()) $("#reply-btn").show()
 
-    const nickname = await dett.getMetaByAddress(_account)
+    const nickname = await dett.getMetaByAddress()
     if (nickname.name) {
       $("#reply-user").text(parseUser(nickname.name))
     }
@@ -296,7 +296,7 @@ const main = async ({ _dexon, _dett }) => {
   // render Article
   const transaction = await dett.cacheweb3.eth.getTransaction(tx)
   const event = await dett.BBS.getPastEvents('Posted', {fromBlock : transaction.blockNumber, toBlock: transaction.blockNumber})
-  console.log(event[0])
+  // console.log(event[0])
   const article = await dett.getArticle(tx, event[0].returnValues, true)
   // check transaction to address is bbs contract
   if (!article) return error()
