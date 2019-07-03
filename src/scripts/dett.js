@@ -1,4 +1,5 @@
 import {awaitTx, parseText} from './utils'
+import Loom from './loom.js'
 
 let web3 = null
 
@@ -135,36 +136,16 @@ class Dett {
 
   async init(_dettweb3, _Web3) {
     if (!_Web3) return console.error("Can't find Web3.")
-    if (!window.loom) return console.error("Can't find Loom.")
 
     // XXX: should it pass in only the provider?
     this.__web3Injected = _dettweb3
-    const networkId = 'extdev-plasma-us1'
-    const writeUrl = 'ws://extdev-plasma-us1.dappchains.com/websocket'
-    const readUrl = 'ws://extdev-plasma-us1.dappchains.com/queryws'
-    this.client = new loom.Client(networkId, writeUrl, readUrl)
-    this.privateKey = loom.CryptoUtils.generatePrivateKey()
-    this.publicKey = loom.CryptoUtils.publicKeyFromPrivateKey(this.privateKey)
-    _dettweb3.currentProvider.isMetaMask = true
-    const ethersProvider = new ethers.providers.Web3Provider(_dettweb3.currentProvider)
-    const signer = ethersProvider.getSigner()
-    this.account = await signer.getAddress()
-    const to = new loom.Address('eth', loom.LocalAddress.fromHexString(this.account))
-    this.client.txMiddleware = loom.createDefaultTxMiddleware(this.client, this.privateKey)
-    const loomProvider = new loom.LoomProvider(this.client, this.privateKey)
-    loomProvider.callerChainId = 'eth'
-    loomProvider.setMiddlewaresForAddress(to.local.toString(), [
-      new loom.NonceTxMiddleware(to, this.client),
-      new loom.SignedEthTxMiddleware(signer)
-    ])
 
-    const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, to)
-    if (await addressMapper.hasMappingAsync(to)) {
-      const mapping = await addressMapper.getMappingAsync(to)
-      this.loomAddr = mapping.to.local.toString()
-    }
+    const loom = new Loom(_dettweb3.currentProvider)
+    await loom.init()
+    this.loomAddr = loom.loomAddr
+    this.account = loom.ethAddr
 
-    web3 = new _Web3(loomProvider)
+    web3 = new _Web3(loom.loomProvider)
     // Todo : Should be env
     // this.cacheweb3 = new _Web3(new _Web3.providers.WebsocketProvider('wss://mainnet-rpc.dexon.org/ws'))
     this.cacheweb3 = web3

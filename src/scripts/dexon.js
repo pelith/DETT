@@ -1,5 +1,6 @@
 import { fromMasterSeed } from 'ethereumjs-wallet/hdkey'
 import { mnemonicToSeed } from 'bip39'
+import Loom from './loom.js'
 
 class EventEmitter{
   constructor(){
@@ -131,15 +132,6 @@ class Dexon extends EventEmitter {
     this.__dett = null
     this.__selectedAddress = null
     this.__networkId = null
-    // Loom
-    this.chainId = 'extdev-plasma-us1'
-    this.writeUrl = 'ws://extdev-plasma-us1.dappchains.com/websocket'
-    this.readUrl = 'ws://extdev-plasma-us1.dappchains.com/queryws'
-    this.ethAddress = null
-    this.client = null
-    this.loomProvider = null
-    this.publicKey = null
-    // Loom
 
     const providerDetectList = [
       {
@@ -166,51 +158,33 @@ class Dexon extends EventEmitter {
     this.identityManager = identityManager || new IdentityManager(this.dexon)
   }
 
-  async initLoom() {
-    if (!window.loom) return
-    const privateKey = loom.CryptoUtils.generatePrivateKey()
-    this.publicKey = loom.CryptoUtils.publicKeyFromPrivateKey(privateKey)
-    this.client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
-    // console.log(this.dexonWeb3.currentProvider)
-    const ethersProvider = new ethers.providers.Web3Provider(this.dexonWeb3.currentProvider)
-    const signer = ethersProvider.getSigner()
-    this.ethAddress = await signer.getAddress()
-    const to = new loom.Address('eth', loom.LocalAddress.fromHexString(this.ethAddress))
-    const from = new loom.Address(this.client.chainId, loom.LocalAddress.fromPublicKey(this.publicKey))
-    const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, from)
-
-    if (await addressMapper.hasMappingAsync(to)) {
-      console.log('Mapping already exists.')
-    } else {
-      console.log('Adding a new mapping.')
-      const ethersSigner = new loom.EthersSigner(signer)
-      await addressMapper.addIdentityMappingAsync(from, to, ethersSigner)
-    }
-
-    return true
-  }
-
   init() {
     if (!this.dexon) return
 
     this.dexonWeb3 = new Web3(this.dexon)
+    const loom = new Loom(this.dexonWeb3.currentProvider)
 
-    /*
-    console.log(this.dexonWeb3.currentProvider.publicConfigStore)
     if (this.dexonWeb3.currentProvider.publicConfigStore) {
       this.dexonWeb3.currentProvider.publicConfigStore.on('update', (data) => {
         if ('networkVersion' in data)
-          if (data.networkVersion === '237'){
+          if (data.networkVersion === '4'){
             this.selectedAddress = 'selectedAddress' in data ? data.selectedAddress : ''
+            loom.init().then(() => {
+              this.ethAddress = loom.ethAddress
+            })
           }
       })
     } else {
       const poll = async () => {
         const networkID = await this.dexonWeb3.eth.net.getId()
         this.networkId = networkID
-        if (networkID === 1 || networkID === 4) {
+        if (networkID === 4) {
           const accounts = await this.dexonWeb3.eth.getAccounts()
           this.selectedAddress = accounts.length > 0 ? accounts[0] : ''
+          if (this.selectedAddress != '' && this.selectedAddress != this.ethAddress) {
+            await loom.init()
+            this.ethAddress = loom.ethAddress
+          }
         } else {
           const error = new Error('Wrong network')
           error.code = 'wrong-network'
@@ -222,27 +196,6 @@ class Dexon extends EventEmitter {
       poll()
       setInterval(poll, 1000)
     }
-    */
-    
-    const poll = async () => {
-      const networkID = await this.dexonWeb3.eth.net.getId()
-      this.networkId = networkID
-      if (networkID === 1 || networkID === 4) {
-        const accounts = await this.dexonWeb3.eth.getAccounts()
-        this.selectedAddress = accounts.length > 0 ? accounts[0] : ''
-        if (this.selectedAddress != '' && this.selectedAddress != this.ethAddress)
-          await this.initLoom()
-      } else {
-        const error = new Error('Wrong network')
-        error.code = 'wrong-network'
-        this.emit('error', error)
-        return
-      }
-    }
-
-    poll()
-    setInterval(poll, 1000)
-    
   }
 
   login(){
