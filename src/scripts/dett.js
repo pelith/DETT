@@ -131,7 +131,9 @@ class Dett {
     this.commentLength = commentLength
     this.titleLength = titleLength
     this.perPageLength = perPageLength
+    this.loom = null
     this.loomAddr = null
+    this.defaultCaller = defaultCaller
   }
 
   async init(_dettweb3, _Web3) {
@@ -140,12 +142,12 @@ class Dett {
     // XXX: should it pass in only the provider?
     this.__web3Injected = _dettweb3
 
-    const loom = new Loom(_dettweb3.currentProvider)
-    await loom.init()
-    this.loomAddr = loom.loomAddr
-    this.account = loom.ethAddr
+    this.loom = new Loom(_dettweb3.currentProvider)
+    await this.loom.init()
+    this.loomAddr = this.loom.loomAddr
+    this.account = this.loom.ethAddr
 
-    web3 = new _Web3(loom.loomProvider)
+    web3 = new _Web3(this.loom.loomProvider)
     // Todo : Should be env
     // this.cacheweb3 = new _Web3(new _Web3.providers.WebsocketProvider('wss://mainnet-rpc.dexon.org/ws'))
     this.cacheweb3 = web3
@@ -303,8 +305,14 @@ class Dett {
     // handle the error elsewhere
   }
 
-  getMetaByAddress() {
-    return PostBase.getAuthorMeta(this.loomAddr)
+  getMetaByAddress(account) {
+    if (this.loom) {
+      return this.loom.getMapAddr(account).then(loomAddr =>{
+        return loomAddr ? PostBase.getAuthorMeta(loomAddr) : ''
+      })
+    }
+
+    return ''
   }
 
   async reply(tx, replyType, content) {
@@ -317,10 +325,9 @@ class Dett {
     if (tx) {
       const gas = await this.dettBBSExt.methods.Reply(tx, +replyType, content).estimateGas()
       try {
-        await this.dettBBSExt.methods.Reply(tx, +replyType, content).send({ from: this.account, gas: gas, chainId:237 })
-        .on('confirmation', (confirmationNumber, receipt) => {
+        const receipt = await this.dettBBSExt.methods.Reply(tx, +replyType, content).send({ from: this.account, gas: gas, chainId:237 })
+        if (receipt.status === true)
           window.location.reload()
-        })
       }
       catch(err){
         alert(err)
@@ -336,10 +343,9 @@ class Dett {
 
     const gas = await this.dettBBSExt.methods.Post(post).estimateGas()
     try {
-      await this.dettBBSExt.methods.Post(post).send({ from: this.account, gas: gas, chainId:237 })
-      .on('confirmation', (confirmationNumber, receipt) => {
+      const receipt = await this.dettBBSExt.methods.Post(post).send({ from: this.account, gas: gas, chainId:237 })
+      if (receipt.status === true)
         window.location = '/'
-      })
     }
     catch(err){
       alert(err)
@@ -358,10 +364,9 @@ class Dett {
 
     const gas = await this.dettBBSEdit.methods.edit(tx, post).estimateGas()
     try {
-      await this.dettBBSEdit.methods.edit(tx, post).send({ from: this.account, gas: gas, chainId:237 })
-      .on('confirmation', (confirmationNumber, receipt) => {
+      const receipt = await this.dettBBSEdit.methods.edit(tx, post).send({ from: this.account, gas: gas, chainId:237 })
+      if (receipt.status === true)
         window.location = '/'
-      })
     }
     catch(err){
       alert(err)

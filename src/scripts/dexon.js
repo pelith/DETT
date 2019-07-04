@@ -1,6 +1,7 @@
 import { fromMasterSeed } from 'ethereumjs-wallet/hdkey'
 import { mnemonicToSeed } from 'bip39'
 import Loom from './loom.js'
+const validNetworkID = 4
 
 class EventEmitter{
   constructor(){
@@ -165,20 +166,21 @@ class Dexon extends EventEmitter {
     const loom = new Loom(this.dexonWeb3.currentProvider)
 
     if (this.dexonWeb3.currentProvider.publicConfigStore) {
+      this.selectedAddress = this.dexonWeb3.currentProvider.publicConfigStore._state.selectedAddress
+      loom.init()
+
       this.dexonWeb3.currentProvider.publicConfigStore.on('update', (data) => {
         if ('networkVersion' in data)
-          if (data.networkVersion === '4'){
+          if (data.networkVersion === (validNetworkID + '')){
             this.selectedAddress = 'selectedAddress' in data ? data.selectedAddress : ''
-            loom.init().then(() => {
-              this.ethAddress = loom.ethAddress
-            })
+            loom.init()
           }
       })
     } else {
       const poll = async () => {
         const networkID = await this.dexonWeb3.eth.net.getId()
         this.networkId = networkID
-        if (networkID === 4) {
+        if (networkID === validNetworkID) {
           const accounts = await this.dexonWeb3.eth.getAccounts()
           this.selectedAddress = accounts.length > 0 ? accounts[0] : ''
           if (this.selectedAddress != '' && this.selectedAddress != this.ethAddress) {
@@ -223,7 +225,7 @@ class Dexon extends EventEmitter {
     if (this.__networkId == id) return
     this.emit('updateNetwork', {
       id,
-      isValid: id === 237,
+      isValid: id === validNetworkID,
     })
     this.__networkId = id
   }

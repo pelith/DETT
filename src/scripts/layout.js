@@ -51,7 +51,7 @@ const hotkey = () => {
 const renderTopbar = async (_account) => {
   if (_account){
     const addrDisp = parseUser(_account)
-    const nickname = await dett.getMetaByAddress()
+    const nickname = await dett.getMetaByAddress(_account)
     if (nickname.name) {
       $('#bbs-user').text(`${nickname.name} (${addrDisp})`)
     } else {

@@ -15,7 +15,7 @@ const render = async (_account) => {
     // only show reply btn at first time
     if (!$("#reply-user").text()) $("#reply-btn").show()
 
-    const nickname = await dett.getMetaByAddress()
+    const nickname = await dett.getMetaByAddress(_account)
     if (nickname.name) {
       $("#reply-user").text(parseUser(nickname.name))
     }

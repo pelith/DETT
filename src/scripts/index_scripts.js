@@ -25,13 +25,10 @@ const main = async ({ _dett, _dexon }) => {
 
   dett = _dett
 
-  /*
-  let milestones = await dett.BBSCache.methods.getMilestones().call()
+  let milestones = await dett.BBSCache.methods.getMilestones().call({ from: dett.defaultCaller })
   milestones = milestones.map((milestone) => {
     return dett.cacheweb3.utils.hexToUtf8(milestone)
   })
-  */
-  let milestones = []
 
   let articles = []
   let addAnnouncement = false
