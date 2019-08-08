@@ -19,7 +19,7 @@ const BBSCacheContract = '0x97804e70c8ec75c09dba415cb4a2be174671a1dd'
 const BBSOriginalAddress = '0x9b985Ef27464CF25561f0046352E03a09d2C2e0C' // not used
 
 const defaultCaller = '0x7c9CB363cf3202fC3BC8CDC08daAfC8f54DD12E1'
-const fromBlock = '7172020'
+const fromBlock = '8000000'
 const titleLength = 40
 const commentLength = 56
 const perPageLength = 20
