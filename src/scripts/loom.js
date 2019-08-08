@@ -23,6 +23,7 @@ class Loom {
     this.ethAddr = await signer.getAddress()
     const to = new loom.Address('eth', loom.LocalAddress.fromHexString(this.ethAddr))
     const from = new loom.Address(this.client.chainId, loom.LocalAddress.fromPublicKey(this.publicKey))
+    this.client.txMiddleware = loom.createDefaultTxMiddleware(this.client, privateKey)
     const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, from)
 
     if (await addressMapper.hasMappingAsync(to)) {
