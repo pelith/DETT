@@ -50,10 +50,10 @@ class PostBase {
 PostBase._metaCache = new Map()
 
 class Article extends PostBase {
-  constructor(_transaction, _returnValues) {
+  constructor(_transaction, _log) {
     super()
     this.transaction = _transaction
-    this.rawContent = _returnValues.content
+    this.rawContent = web3.utils.hexToUtf8('0x' + _log.data.slice(130, -6))
     this.titleMatch = false
     this.title = this.getTitle()
     this.content = this.getContent()
@@ -218,11 +218,12 @@ class Dett {
     })
   }
 
-  async getArticle(tx, returnValues, checkEdited){
+  async getArticle(tx, checkEdited){
     const transaction = await web3.eth.getTransaction(tx)
     // console.log(transaction)
-
-    const article = new Article(transaction, returnValues)
+    const txReceipt = await web3.eth.getTransactionReceipt(tx)
+    // console.log(txReceipt)
+    const article = new Article(transaction, txReceipt.logs[0])
     await article.init()
 
     if (checkEdited) {
