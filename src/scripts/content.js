@@ -181,7 +181,7 @@ const renderArticle = (article, isPreRendered) => {
   contentNodeList.forEach(el => elContent.append(el))
 
   $('#main-content-title').text(article.title)
-  $('#main-content-date').text(formatPttDateTime(article.block.timestamp))
+  $('#main-content-date').text(formatPttDateTime(article.timestamp))
 
   let permalink = window.location.origin + window.location.pathname
   if (window.location.pathname.indexOf('/s/') < 0) {

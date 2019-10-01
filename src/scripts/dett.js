@@ -64,7 +64,7 @@ class Article extends PostBase {
   async init() {
     this.block = await web3.eth.getBlock(this.transaction.blockNumber)
     this.authorMeta = await Article.getAuthorMeta(this.transaction.from)
-    this.timestamp = this.block.timestamp
+    this.timestamp = this.block.timestamp * 1e3
   }
 
   async initEdits(edits) {
@@ -75,7 +75,7 @@ class Article extends PostBase {
         this.title = this.getTitle()
         this.content = this.getContent()
         let block = await web3.eth.getBlock(edit.blockNumber)
-        this.editTimestamps.push(block.timestamp)
+        this.editTimestamps.push(block.timestamp * 1e3)
       }
     }
   }
@@ -113,7 +113,7 @@ class Comment extends PostBase {
     ])
 
     this.block = block
-    this.timestamp = this.block.timestamp
+    this.timestamp = this.block.timestamp * 1e3
     this.authorMeta = authorMeta
   }
 
