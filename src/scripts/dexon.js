@@ -1,6 +1,7 @@
 import { fromMasterSeed } from 'ethereumjs-wallet/hdkey'
 import { mnemonicToSeed } from 'bip39'
-
+import Loom from './loom.js'
+const validNetworkID = 4
 
 class EventEmitter{
   constructor(){
@@ -162,21 +163,30 @@ class Dexon extends EventEmitter {
     if (!this.dexon) return
 
     this.dexonWeb3 = new Web3(this.dexon)
+    const loom = new Loom(this.dexonWeb3.currentProvider)
 
     if (this.dexonWeb3.currentProvider.publicConfigStore) {
+      this.selectedAddress = this.dexonWeb3.currentProvider.publicConfigStore._state.selectedAddress
+      loom.init()
+
       this.dexonWeb3.currentProvider.publicConfigStore.on('update', (data) => {
         if ('networkVersion' in data)
-          if (data.networkVersion === '237'){
+          if (data.networkVersion === (validNetworkID + '')){
             this.selectedAddress = 'selectedAddress' in data ? data.selectedAddress : ''
+            loom.init()
           }
       })
     } else {
       const poll = async () => {
         const networkID = await this.dexonWeb3.eth.net.getId()
         this.networkId = networkID
-        if (networkID === 237) {
+        if (networkID === validNetworkID) {
           const accounts = await this.dexonWeb3.eth.getAccounts()
           this.selectedAddress = accounts.length > 0 ? accounts[0] : ''
+          if (this.selectedAddress != '' && this.selectedAddress != this.ethAddress) {
+            await loom.init()
+            this.ethAddress = loom.ethAddress
+          }
         } else {
           const error = new Error('Wrong network')
           error.code = 'wrong-network'
@@ -215,7 +225,7 @@ class Dexon extends EventEmitter {
     if (this.__networkId == id) return
     this.emit('updateNetwork', {
       id,
-      isValid: id === 237,
+      isValid: id === validNetworkID,
     })
     this.__networkId = id
   }

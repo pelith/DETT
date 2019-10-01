@@ -294,7 +294,10 @@ const main = async ({ _dexon, _dett }) => {
   _dexon.identityManager.init()
 
   // render Article
-  const article = await dett.getArticle(tx, true)
+  const transaction = await dett.cacheweb3.eth.getTransaction(tx)
+  const event = await dett.BBS.getPastEvents('Posted', {fromBlock : transaction.blockNumber, toBlock: transaction.blockNumber})
+  // console.log(event[0])
+  const article = await dett.getArticle(tx, event[0].returnValues, true)
   // check transaction to address is bbs contract
   if (!article) return error()
 

@@ -100,7 +100,9 @@ const main = async ({ _dexon, _dett }) => {
   // get reply tx
   const rtx = getUrlParameter('rtx')
   if (rtx.match(/^0x[a-fA-F0-9]{64}$/g)) {
-    const article = await dett.getArticle(rtx, false)
+    const transaction = await dett.cacheweb3.eth.getTransaction(rtx)
+    const event = await dett.BBS.getPastEvents('Posted', {fromBlock : transaction.blockNumber, toBlock: transaction.blockNumber})
+    const article = await dett.getArticle(rtx, event[0].returnValues, false)
     $("#bbs-title").val(('Re: '+article.title).substr(0, dett.titleLength))
   }
 
