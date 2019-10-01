@@ -267,7 +267,7 @@ window._layoutInit = async () => {
     }
   })
 
-  _dexon.init()
+  await _dexon.init()
 
   const _dett = new Dett()
   dett = _dett
@@ -279,7 +279,7 @@ window._layoutInit = async () => {
     }
   })
 
-  await _dett.init(_dexon.dexonWeb3, Web3)
+  await _dett.init(_dexon.loom, _dexon.dexonWeb3, Web3)
 
   hotkey()
 

@@ -128,6 +128,7 @@ class Dexon extends EventEmitter {
     super()
     // this.dexon = _dexon
     this.providerName = null
+    this.loom = ''
     this.dexonWeb3 = ''
     this.__selectedAddress = ''
     this.__dett = null
@@ -159,21 +160,21 @@ class Dexon extends EventEmitter {
     this.identityManager = identityManager || new IdentityManager(this.dexon)
   }
 
-  init() {
+  async init() {
     if (!this.dexon) return
 
     this.dexonWeb3 = new Web3(this.dexon)
-    const loom = new Loom(this.dexonWeb3.currentProvider)
+    this.loom = new Loom(this.dexonWeb3.currentProvider)
 
     if (this.dexonWeb3.currentProvider.publicConfigStore) {
       this.selectedAddress = this.dexonWeb3.currentProvider.publicConfigStore._state.selectedAddress
-      loom.init()
+      await this.loom.init()
 
-      this.dexonWeb3.currentProvider.publicConfigStore.on('update', (data) => {
+      this.dexonWeb3.currentProvider.publicConfigStore.on('update', async (data) => {
         if ('networkVersion' in data)
           if (data.networkVersion === (validNetworkID + '')){
             this.selectedAddress = 'selectedAddress' in data ? data.selectedAddress : ''
-            loom.init()
+            await this.loom.init()
           }
       })
     } else {
@@ -184,8 +185,8 @@ class Dexon extends EventEmitter {
           const accounts = await this.dexonWeb3.eth.getAccounts()
           this.selectedAddress = accounts.length > 0 ? accounts[0] : ''
           if (this.selectedAddress != '' && this.selectedAddress != this.ethAddress) {
-            await loom.init()
-            this.ethAddress = loom.ethAddress
+            await this.loom.init()
+            this.ethAddress = this.loom.ethAddress
           }
         } else {
           const error = new Error('Wrong network')

@@ -136,14 +136,13 @@ class Dett {
     this.defaultCaller = defaultCaller
   }
 
-  async init(_dettweb3, _Web3) {
+  async init(_loom, _dettweb3, _Web3) {
     if (!_Web3) return console.error("Can't find Web3.")
 
     // XXX: should it pass in only the provider?
     this.__web3Injected = _dettweb3
 
-    this.loom = new Loom(_dettweb3.currentProvider)
-    await this.loom.init()
+    this.loom = _loom
     this.loomAddr = this.loom.loomAddr
     this.account = this.loom.ethAddr
 
