@@ -168,13 +168,13 @@ class Dexon extends EventEmitter {
 
     if (this.dexonWeb3.currentProvider.publicConfigStore) {
       this.selectedAddress = this.dexonWeb3.currentProvider.publicConfigStore._state.selectedAddress
-      await this.loom.init()
+      if (!await this.loom.init()) this.loom.default()
 
       this.dexonWeb3.currentProvider.publicConfigStore.on('update', async (data) => {
         if ('networkVersion' in data)
           if (data.networkVersion === (validNetworkID + '')){
             this.selectedAddress = 'selectedAddress' in data ? data.selectedAddress : ''
-            await this.loom.init()
+            if (!await this.loom.init()) this.loom.default()
           }
       })
     } else {
@@ -185,7 +185,7 @@ class Dexon extends EventEmitter {
           const accounts = await this.dexonWeb3.eth.getAccounts()
           this.selectedAddress = accounts.length > 0 ? accounts[0] : ''
           if (this.selectedAddress != '' && this.selectedAddress != this.ethAddress) {
-            await this.loom.init()
+            if (!await this.loom.init()) this.loom.default()
             this.ethAddress = this.loom.ethAddress
           }
         } else {
@@ -196,6 +196,7 @@ class Dexon extends EventEmitter {
         }
       }
 
+      if (!await this.loom.init()) this.loom.default()
       poll()
       setInterval(poll, 1000)
     }

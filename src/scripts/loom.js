@@ -11,16 +11,30 @@ class Loom {
     this.loomAddr = null
   }
 
+  default() {
+    if (!window.loom) return console.error("Can't find Loom.")
+    const privateKey = loom.CryptoUtils.generatePrivateKey()
+    const publicKey = loom.CryptoUtils.publicKeyFromPrivateKey(privateKey)
+    const client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
+    const from = loom.LocalAddress.fromPublicKey(publicKey).toString()
+    this.loomProvider = new loom.LoomProvider(client, privateKey)
+
+    return true
+  }
 
   async init() {
     if (!window.loom) return console.error("Can't find Loom.")
     this.client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
     const privateKey = loom.CryptoUtils.generatePrivateKey()
     this.publicKey = loom.CryptoUtils.publicKeyFromPrivateKey(privateKey)
-    this.web3Provider.isMetaMask = true
     const ethersProvider = new ethers.providers.Web3Provider(this.web3Provider)
     const signer = ethersProvider.getSigner()
-    this.ethAddr = await signer.getAddress()
+    try {
+      this.ethAddr = await signer.getAddress()
+    } catch(err) {
+      console.log(err)
+      return false
+    }
     const to = new loom.Address('eth', loom.LocalAddress.fromHexString(this.ethAddr))
     const from = new loom.Address(this.client.chainId, loom.LocalAddress.fromPublicKey(this.publicKey))
     this.client.txMiddleware = loom.createDefaultTxMiddleware(this.client, privateKey)
