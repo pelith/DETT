@@ -1,5 +1,4 @@
 import {awaitTx, parseText} from './utils'
-import Loom from './loom.js'
 
 let web3 = null
 
@@ -15,11 +14,11 @@ const BBSExtContract = '0x455f5b05646b00135256024e34aeab75314c15ff'
 const BBSAdminContract = '0xd20eb5ac22e864dc026cf018bedea6a0fac7eabc'
 const BBSEditContract = '0x74c51abf4acdf41e4a0ac91a3de1bf83c6e77e29'
 const BBSPBContract = '0xfc6eae48ab95fc9b82b3cdf3f11d5e7d29ff74aa'
-const BBSCacheContract = '0x97804e70c8ec75c09dba415cb4a2be174671a1dd'
+const BBSCacheContract = '0x3c61a2f75e3cc775920048236166605f7d24a877'
 const BBSOriginalAddress = '0x9b985Ef27464CF25561f0046352E03a09d2C2e0C' // not used
 
 const defaultCaller = '0x7c9CB363cf3202fC3BC8CDC08daAfC8f54DD12E1'
-const fromBlock = '7550640'
+const fromBlock = '8511360' // 7550640
 const titleLength = 40
 const commentLength = 56
 const perPageLength = 20
@@ -146,7 +145,8 @@ class Dett {
     this.loomAddr = this.loom.loomAddr
     this.account = this.loom.ethAddr
 
-    web3 = new _Web3(this.loom.loomProvider)
+    if (this.loom._client) web3 = new _Web3(_loom)
+    else web3 = new _Web3(this.loom.loomProvider)
     // Todo : Should be env
     // this.cacheweb3 = new _Web3(new _Web3.providers.WebsocketProvider('wss://mainnet-rpc.dexon.org/ws'))
     this.cacheweb3 = web3

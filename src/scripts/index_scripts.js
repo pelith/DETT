@@ -221,7 +221,7 @@ const directDisplay = (article, votes, banned) => {
   elem.html(
     `<div class="nrec"></div>
     <div class="title">
-      <a href="content.html?tx=${article.transaction.hash}">
+      <a href="${href}">
         ${htmlEntities(article.title)}
       </a>
     </div>

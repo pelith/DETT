@@ -14,9 +14,7 @@ class Loom {
   default() {
     if (!window.loom) return console.error("Can't find Loom.")
     const privateKey = loom.CryptoUtils.generatePrivateKey()
-    const publicKey = loom.CryptoUtils.publicKeyFromPrivateKey(privateKey)
     const client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
-    const from = loom.LocalAddress.fromPublicKey(publicKey).toString()
     this.loomProvider = new loom.LoomProvider(client, privateKey)
 
     return true
