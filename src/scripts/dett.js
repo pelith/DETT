@@ -153,8 +153,6 @@ class Dett {
     this.BBSAdmin = new web3.eth.Contract(ABIBBSAdmin, BBSAdminContract)
     this.BBSPB = new web3.eth.Contract(ABIBBSPB, BBSPBContract)
     this.BBSCache = new this.cacheweb3.eth.Contract(ABICache, BBSCacheContract)
-
-    this.BBSEditEvents = await this.BBSEdit.getPastEvents('Edited', {fromBlock : this.fromBlock })
   }
 
   __initContractsWith(_web3) {
@@ -219,6 +217,7 @@ class Dett {
     await article.init()
 
     if (checkEdited) {
+      this.BBSEditEvents = await this.BBS.getPastEvents('Edited', {fromBlock : this.fromBlock})
       const edits = this.BBSEditEvents.filter(event => event.returnValues.origin === tx )
       if (edits.length >0) await article.initEdits(edits)
     }
