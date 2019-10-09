@@ -29,14 +29,6 @@ contract Ownable {
     }
 }
 
-contract BBS {
-    event Posted(string content);
-
-    function Post(string memory content) public {
-        emit Posted(content);
-    }
-}
-
 contract Admin is Ownable{
 	mapping(bytes32 => bool) public banned;
 	mapping(address => bool) public isAdmin;
@@ -61,22 +53,13 @@ contract Admin is Ownable{
 
 }
 
-contract BBS_Edit {
-	event Edited(bytes32 origin, string content);
-
-	function edit(bytes32 origin, string memory content) public {
-		emit Edited(origin, content);
-	}
-
-}
-
-contract BBS_Extension {
-	BBS DEXON_BBS = BBS(0x663002C4E41E5d04860a76955A7B9B8234475952);
-
+contract BBS {
 	mapping(bytes32 => uint256) public upvotes;
 	mapping(bytes32 => uint256) public downvotes;
 	mapping(address => mapping(bytes32 => bool)) public voted;
 
+    event Posted(string content);
+    event Edited(bytes32 origin, string content);
 	event Replied(bytes32 origin, uint256 vote, string content);
 
 	function upvote(bytes32 post) internal {
@@ -91,9 +74,13 @@ contract BBS_Extension {
 		downvotes[post] += 1;
 	}
 
-	function Post(string memory content) public {
-		DEXON_BBS.Post(content);
-	}
+    function Post(string memory content) public {
+        emit Posted(content);
+    }
+
+    function edit(bytes32 origin, string memory content) public {
+        emit Edited(origin, content);
+    }
 
 	function Reply(bytes32 origin, uint256 vote, string memory content) public {
 		if(vote == 1)
