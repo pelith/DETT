@@ -109,7 +109,7 @@ const getCommentLink = comment => {
   return $('<a class="--link-to-addr tooltip" target="_blank"></a>')
     .html(parseUser(from, authorMeta)+'<span>('+from+')</span>')
     // .attr('data-address', from)
-    .attr('href', 'https://dexscan.app/address/' + from)
+    .attr('href', 'https://extdev-blockexplorer.dappchains.com/address/' + from)
 }
 
 const keyboardHook = () => {
@@ -166,8 +166,8 @@ const renderArticle = (article, isPreRendered) => {
 
   const authorLink = $('<a class="--link-to-addr hover" target="_blank"></a>')
                     .text(parseUser(article.transaction.from, article.authorMeta))
-                    .attr('data-address', article.transaction.from)
-                    .attr('href', 'https://dexscan.app/address/' + article.transaction.from)
+                    .attr('data-address', `loom:${article.transaction.from}, eth:${article.origAuthor}`)
+                    .attr('href', 'https://extdev-blockexplorer.dappchains.com/address/' + article.transaction.from)
 
   $('#main-content-author').empty().append(authorLink)
 
@@ -193,7 +193,7 @@ const renderArticle = (article, isPreRendered) => {
   $('#main-content-href').attr('href', permalink)
   $('#main-content-href').text(permalink)
   $('#main-content-from').text('@'+article.transaction.blockNumber)
-  $('#main-content-from').attr('href', 'https://dexonscan.app/transaction/'+tx)
+  $('#main-content-from').attr('href', 'https://extdev-blockexplorer.dappchains.com/tx/'+tx)
 
 
   for (let timestamp of article.editTimestamps){

@@ -227,7 +227,7 @@ const directDisplay = (article, votes, banned) => {
     </div>
     <div class="meta">
       <div class="author">
-        <a class="--link-to-addr hover" href="https://dexscan.app/address/${article.author}" target="_blank" data-address="${article.author}">
+        <a class="--link-to-addr hover" href="https://extdev-blockexplorer.dappchains.com/address/${article.author}" target="_blank" data-address="loom:${article.transaction.from}, eth:${article.origAuthor}">
           ${parseUser(article.author, article.authorMeta)}
         </a>
       </div>
