@@ -269,19 +269,24 @@ class Dett {
   }
 
   getRegisterHistory() {
-    return this.BBSPB.getPastEvents('allEvents', {fromBlock: 0})
+    return this.BBSPB.getPastEvents('allEvents', {fromBlock: fromBlock})
   }
 
   async checkIdAvailable(id) {
     // return !+(await this.BBSPB.methods.name2addr(web3.utils.fromAscii(id.toLowerCase())).call())
     try {
       // dry run is a dirty but works
-      await this.BBSPB.methods.register(id).estimateGas({
-        value: '0x7' + 'f'.repeat(63),
+      await this.BBSPB.methods.register(id).call({
+        from: this.account,
+        value: '0x0',
       })
-      return true
+      // return true
     } catch (e) {
-      return false
+      // dirty but worked for loom
+      if (e.message.indexOf('reverted') !== -1)
+        return false
+
+      return true
     }
   }
 
@@ -289,13 +294,7 @@ class Dett {
     const gas = await this.dettBBSPB.methods.register(id).estimateGas({
       value: registerFee,
     })
-    await awaitTx(this.dettBBSPB.methods.register(id).send({
-      from: this.account,
-      // FIXME: this gas estimation is WRONG, why?
-      gas: gas * 2,
-      value: registerFee,
-      chainId:237
-    }))
+    await awaitTx(this.dettBBSPB.methods.register(id).send())
     // handle the error elsewhere
   }
 
