@@ -107,7 +107,7 @@ const getCommentLink = comment => {
   const {from} = comment.transaction
   // TODO: bind the event to get / substitute name
   return $('<a class="--link-to-addr tooltip" target="_blank"></a>')
-    .html(parseUser(from, authorMeta)+'<span>('+from+')</span>')
+    .html(parseUser(comment.origAuthor, authorMeta)+'<span>('+comment.origAuthor+')</span>')
     // .attr('data-address', from)
     .attr('href', 'https://extdev-blockexplorer.dappchains.com/address/' + from)
 }
@@ -165,8 +165,8 @@ const renderArticle = (article, isPreRendered) => {
   document.title = article.title + ' - Gossiping - DEXON BBS'
 
   const authorLink = $('<a class="--link-to-addr hover" target="_blank"></a>')
-                    .text(parseUser(article.transaction.from, article.authorMeta))
-                    .attr('data-address', `loom:${article.transaction.from}, eth:${article.origAuthor}`)
+                    .text(parseUser(article.origAuthor, article.authorMeta))
+                    .attr('data-address', `${article.origAuthor}`)
                     .attr('href', 'https://extdev-blockexplorer.dappchains.com/address/' + article.transaction.from)
 
   $('#main-content-author').empty().append(authorLink)
@@ -200,7 +200,7 @@ const renderArticle = (article, isPreRendered) => {
     const date = new Date(timestamp)
     const formatDate = (date.getMonth()+1)+'/'+(''+date.getDate()).padStart(2, '0')+'/'+date.getFullYear()+' '+(''+date.getHours()).padStart(2, '0')+':'+(''+date.getMinutes()).padStart(2, '0')+':'+(''+date.getSeconds()).padStart(2, '0')
 
-    const elem = $(`<span class="f2">※ 編輯: ${parseUser(article.transaction.from, article.authorMeta)}, ${formatDate}</span><br>`)
+    const elem = $(`<span class="f2">※ 編輯: ${parseUser(article.origAuthor, article.authorMeta)}, ${formatDate}</span><br>`)
     $('.edit').append(elem)
   }
 

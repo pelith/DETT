@@ -1,6 +1,7 @@
 import {awaitTx, parseText} from './utils'
 
 let web3 = null
+let loom = null
 
 const ABIBBS = [{"constant":false,"inputs":[{"name":"origin","type":"bytes32"},{"name":"content","type":"string"}],"name":"edit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"origin","type":"bytes32"},{"name":"vote","type":"uint256"},{"name":"content","type":"string"}],"name":"Reply","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"bytes32"}],"name":"voted","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"downvotes","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"upvotes","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"content","type":"string"}],"name":"Post","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"anonymous":false,"inputs":[{"indexed":false,"name":"content","type":"string"}],"name":"Posted","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"origin","type":"bytes32"},{"indexed":false,"name":"content","type":"string"}],"name":"Edited","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"origin","type":"bytes32"},{"indexed":false,"name":"vote","type":"uint256"},{"indexed":false,"name":"content","type":"string"}],"name":"Replied","type":"event"}]
 const ABIBBSAdmin = [{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"isAdmin","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"who","type":"address"},{"name":"_isAdmin","type":"bool"}],"name":"setAdmin","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"origin","type":"bytes32"},{"name":"_banned","type":"bool"}],"name":"ban","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"banned","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"category","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[{"name":"_category","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"origin","type":"bytes32"},{"indexed":false,"name":"banned","type":"bool"},{"indexed":false,"name":"admin","type":"address"}],"name":"Ban","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"previousOwner","type":"address"},{"indexed":true,"name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"}]
@@ -13,7 +14,7 @@ const BBSPBContract = '0xfc6eae48ab95fc9b82b3cdf3f11d5e7d29ff74aa'
 const BBSCacheContract = '0x3c61a2f75e3cc775920048236166605f7d24a877'
 
 const defaultCaller = '0x7c9CB363cf3202fC3BC8CDC08daAfC8f54DD12E1'
-const fromBlock = '8511360' // 7550640
+const fromBlock = '8862565'
 const titleLength = 40
 const commentLength = 56
 const perPageLength = 20
@@ -52,12 +53,14 @@ class Article extends PostBase {
     this.title = this.getTitle()
     this.content = this.getContent()
     this.author = this.transaction.from
+    this.origAuthor = null
     this.editTimestamps = []
   }
 
   async init() {
     this.block = await web3.eth.getBlock(this.transaction.blockNumber)
     this.authorMeta = await Article.getAuthorMeta(this.transaction.from)
+    this.origAuthor = await loom.getOrigAddr(this.author)
     this.timestamp = this.block.timestamp * 1e3
   }
 
@@ -100,6 +103,7 @@ class Comment extends PostBase {
   async init() {
     this.transaction = await web3.eth.getTransaction(this.tx)
     this.author = this.transaction.from
+    this.origAuthor = await loom.getOrigAddr(this.author)
 
     const [block, authorMeta] = await Promise.all([
       web3.eth.getBlock(this.transaction.blockNumber),
@@ -125,7 +129,6 @@ class Dett {
     this.commentLength = commentLength
     this.titleLength = titleLength
     this.perPageLength = perPageLength
-    this.loom = null
     this.loomAddr = null
     this.defaultCaller = defaultCaller
   }
@@ -136,12 +139,12 @@ class Dett {
     // XXX: should it pass in only the provider?
     this.__web3Injected = _dettweb3
 
-    this.loom = _loom
-    this.loomAddr = this.loom.loomAddr
-    this.account = this.loom.ethAddr
+    loom = _loom
+    this.loomAddr = loom.loomAddr
+    this.account = loom.ethAddr
 
-    if (this.loom._client) web3 = new _Web3(_loom)
-    else web3 = new _Web3(this.loom.loomProvider)
+    if (loom._client) web3 = new _Web3(_loom)
+    else web3 = new _Web3(loom.loomProvider)
     // Todo : Should be env
     // this.cacheweb3 = new _Web3(new _Web3.providers.WebsocketProvider('wss://mainnet-rpc.dexon.org/ws'))
     this.cacheweb3 = web3
@@ -297,8 +300,8 @@ class Dett {
   }
 
   getMetaByAddress(account) {
-    if (this.loom) {
-      return this.loom.getMapAddr(account).then(loomAddr =>{
+    if (loom) {
+      return loom.getMapAddr(account).then(loomAddr =>{
         return loomAddr ? PostBase.getAuthorMeta(loomAddr) : ''
       })
     }
@@ -370,10 +373,9 @@ class Dett {
   rewardAuthor(article, value) {
     const txObj = {
       from: this.account,
-      to: article.author,
+      to: article.origAuthor,
       value: Web3.utils.toWei(value),
       gas: 21000,
-      chainId: 237,
     }
 
     if (this.dettweb3 != this.__web3Injected) {

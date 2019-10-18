@@ -68,6 +68,17 @@ class Loom {
 
     return null
   }
+
+  async getOrigAddr(loomAddr) {
+    const to = new loom.Address(this.chainId, loom.LocalAddress.fromHexString(loomAddr))
+    const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, to)
+    if (await addressMapper.hasMappingAsync(to)) {
+      const mapping = await addressMapper.getMappingAsync(to)
+      return mapping.to.local.toString()
+    }
+
+    return null
+  }
 }
 
 export default Loom
