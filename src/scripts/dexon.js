@@ -161,7 +161,12 @@ class Dexon extends EventEmitter {
   }
 
   async init() {
-    if (!this.dexon) return
+    if (!this.dexon) {
+      this.dexonWeb3 = new Web3(new Web3.providers.HttpProvider('https://rinkeby.infura.io/v3/'))
+      this.loom = new Loom(this.dexonWeb3.currentProvider)
+      this.loom.default()
+      return
+    }
 
     this.dexonWeb3 = new Web3(this.dexon)
     this.loom = new Loom(this.dexonWeb3.currentProvider)

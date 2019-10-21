@@ -174,9 +174,7 @@ class Dett {
       this.dettweb3 = web3
       Object.assign(this, this.__contracts)
       // TODO: unregister when changing wallet
-      const address = newWallet.getAddressString()
-      const w = web3.eth.accounts.privateKeyToAccount(`0x${newWallet.getPrivateKey().toString('hex')}`)
-      web3.eth.accounts.wallet.add(w)
+      loom.mapHdWallet(this.dettweb3, newWallet)
     } else {
       this.dettweb3 = this.__web3Injected
       Object.assign(this, this.__contractsForInjectedWeb3)
