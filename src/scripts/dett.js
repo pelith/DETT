@@ -291,10 +291,9 @@ class Dett {
   }
 
   async registerName(id, registerFee) {
-    const gas = await this.dettBBSPB.methods.register(id).estimateGas({
-      value: registerFee,
-    })
-    await awaitTx(this.dettBBSPB.methods.register(id).send())
+    const receipt = await this.dettBBSPB.methods.register(id).send({ from: this.account })
+    if (receipt.status === true)
+      window.location.reload()
     // handle the error elsewhere
   }
 
