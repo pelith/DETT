@@ -1,3 +1,7 @@
+import { derivePath } from 'ed25519-hd-key'
+import { mnemonicToSeedSync } from 'bip39'
+import { sha256 } from 'js-sha256'
+
 class Loom {
   constructor(currentProvider = null) {
     this.web3Provider = currentProvider
@@ -12,7 +16,6 @@ class Loom {
   }
 
   default() {
-    if (!window.loom) return console.error("Can't find Loom.")
     const privateKey = loom.CryptoUtils.generatePrivateKey()
     this.client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
     this.loomProvider = new loom.LoomProvider(this.client, privateKey)
@@ -21,7 +24,6 @@ class Loom {
   }
 
   async init() {
-    if (!window.loom) return console.error("Can't find Loom.")
     this.client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
     const privateKey = loom.CryptoUtils.generatePrivateKey()
     this.publicKey = loom.CryptoUtils.publicKeyFromPrivateKey(privateKey)
@@ -34,14 +36,14 @@ class Loom {
       return false
     }
     const ownerEthAddr = new loom.Address('eth', loom.LocalAddress.fromHexString(this.ethAddr))
-    const ownerLoomAddr = new loom.Address(this.client.chainId, loom.LocalAddress.fromPublicKey(this.publicKey))
+    const ownerLoomAddr = new loom.Address(this.chainId, loom.LocalAddress.fromPublicKey(this.publicKey))
     this.client.txMiddleware = loom.createDefaultTxMiddleware(this.client, privateKey)
     const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, ownerLoomAddr)
 
-    if (await addressMapper.hasMappingAsync(ownerEthAddr).catch(e => { return false })) {
+    if (await addressMapper.hasMappingAsync(ownerEthAddr)) {
       const mapping = await addressMapper.getMappingAsync(ownerEthAddr)
       this.loomAddr = mapping.to.local.toString()
-      console.log(`Already mapped to ${ownerLoomAddr}.`)
+      console.log(`Already mapped to ${this.loomAddr}.`)
     } else {
       console.log('Adding a new mapping.')
       const ethersSigner = new loom.EthersSigner(signer)
@@ -59,23 +61,24 @@ class Loom {
     return true
   }
 
-  async mapHdWallet(web3, newWallet) {
-    const address = newWallet.getAddressString()
+  async mapHdWallet(web3, newWallet, seedphrase) {
+    this.ethAddr = newWallet.getAddressString()
     const account = web3.eth.accounts.privateKeyToAccount(`0x${newWallet.getPrivateKey().toString('hex')}`)
     web3.eth.accounts.wallet.add(account)
-    this.ethAddr = address
     const signer = new loom.OfflineWeb3Signer(web3, account)
     const ownerEthAddr = new loom.Address('eth', loom.LocalAddress.fromHexString(this.ethAddr))
-    const privateKey = loom.CryptoUtils.generatePrivateKey()
+
+    const seed = mnemonicToSeedSync(seedphrase)
+    const privateKey = loom.CryptoUtils.generatePrivateKeyFromSeed(new Uint8Array(sha256.array(seed)))
     this.publicKey = loom.CryptoUtils.publicKeyFromPrivateKey(privateKey)
-    const ownerLoomAddr = new loom.Address(this.client.chainId, loom.LocalAddress.fromPublicKey(this.publicKey))
+    const ownerLoomAddr = new loom.Address(this.chainId, loom.LocalAddress.fromPublicKey(this.publicKey))
     this.client.txMiddleware = loom.createDefaultTxMiddleware(this.client, privateKey)
     const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, ownerLoomAddr)
 
-    if (await addressMapper.hasMappingAsync(ownerEthAddr).catch(e => { return false })) {
+    if (await addressMapper.hasMappingAsync(ownerEthAddr)) {
       const mapping = await addressMapper.getMappingAsync(ownerEthAddr)
       this.loomAddr = mapping.to.local.toString()
-      console.log(`Already mapped to ${ownerLoomAddr}.`)
+      console.log(`Already mapped to ${this.loomAddr}.`)
     } else {
       console.log('Adding a new mapping.')
       await addressMapper.addIdentityMappingAsync(ownerLoomAddr, ownerEthAddr, signer)
@@ -88,7 +91,7 @@ class Loom {
   async getMapAddr(ethAddr) {
     const to = new loom.Address('eth', loom.LocalAddress.fromHexString(ethAddr))
     const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, to)
-    if (await addressMapper.hasMappingAsync(to).catch(e => { return false })) {
+    if (await addressMapper.hasMappingAsync(to)) {
       const mapping = await addressMapper.getMappingAsync(to)
       return mapping.to.local.toString()
     }
@@ -99,7 +102,7 @@ class Loom {
   async getOrigAddr(loomAddr) {
     const to = new loom.Address(this.chainId, loom.LocalAddress.fromHexString(loomAddr))
     const addressMapper = await loom.Contracts.AddressMapper.createAsync(this.client, to)
-    if (await addressMapper.hasMappingAsync(to).catch(e => { return false })) {
+    if (await addressMapper.hasMappingAsync(to)) {
       const mapping = await addressMapper.getMappingAsync(to)
       return mapping.to.local.toString()
     }

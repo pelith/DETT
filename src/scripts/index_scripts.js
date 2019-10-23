@@ -87,7 +87,7 @@ const main = async ({ _dett, _dexon }) => {
   // here the articles are loaded completely; do render here
   _dexon.identityManager.on('login', ({account, wallet}) => {
     render(account)
-    dett.setWallet(wallet)
+    dett.setWallet(wallet, _dexon.identityManager.__seed)
   })
   _dexon.identityManager.init()
 

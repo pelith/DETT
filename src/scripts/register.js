@@ -89,7 +89,7 @@ const main = async ({ _dexon, _dett }) => {
 
   _dexon.identityManager.on('login', ({account, wallet}) => {
     render(account)
-    dett.setWallet(wallet)
+    dett.setWallet(wallet, _dexon.identityManager.__seed)
   })
   _dexon.identityManager.init()
 

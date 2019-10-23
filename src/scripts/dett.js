@@ -169,12 +169,12 @@ class Dett {
     }
   }
 
-  setWallet(newWallet) {
+  setWallet(newWallet, seed) {
     if (newWallet) {
       this.dettweb3 = web3
       Object.assign(this, this.__contracts)
       // TODO: unregister when changing wallet
-      loom.mapHdWallet(this.dettweb3, newWallet)
+      loom.mapHdWallet(this.dettweb3, newWallet, seed)
     } else {
       this.dettweb3 = this.__web3Injected
       Object.assign(this, this.__contractsForInjectedWeb3)
