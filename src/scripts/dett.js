@@ -131,6 +131,7 @@ class Dett {
     this.perPageLength = perPageLength
     this.loomAddr = null
     this.defaultCaller = defaultCaller
+    this.isHdWallet = false
   }
 
   async init(_loom, _dettweb3, _Web3) {
@@ -140,11 +141,15 @@ class Dett {
     this.__web3Injected = _dettweb3
 
     loom = _loom
-    this.loomAddr = loom.loomAddr
-    this.account = loom.ethAddr
 
-    if (loom._client) web3 = new _Web3(_loom)
-    else web3 = new _Web3(loom.loomProvider)
+    if (loom._client) {
+      web3 = new _Web3(_loom)
+    }
+    else {
+      this.loomAddr = loom.loomAddr
+      this.account = loom.ethAddr
+      web3 = new _Web3(loom.loomProvider)
+    }
     // Todo : Should be env
     // this.cacheweb3 = new _Web3(new _Web3.providers.WebsocketProvider('wss://mainnet-rpc.dexon.org/ws'))
     this.cacheweb3 = web3
@@ -169,12 +174,15 @@ class Dett {
     }
   }
 
-  setWallet(newWallet, seed) {
+  async setWallet(newWallet, seed) {
     if (newWallet) {
       this.dettweb3 = web3
       Object.assign(this, this.__contracts)
       // TODO: unregister when changing wallet
-      loom.mapHdWallet(this.dettweb3, newWallet, seed)
+      await loom.mapHdWallet(this.dettweb3, newWallet, seed)
+      this.loomAddr = loom.loomAddr
+      this.account = loom.ethAddr
+      this.isHdWallet = true
     } else {
       this.dettweb3 = this.__web3Injected
       Object.assign(this, this.__contractsForInjectedWeb3)
@@ -289,7 +297,12 @@ class Dett {
   }
 
   async registerName(id, registerFee) {
-    const receipt = await this.dettBBSPB.methods.register(id).send({ from: this.account })
+    let receipt = null
+    if (this.isHdWallet)
+      receipt = await this.dettBBSPB.methods.register(id).send({ from: this.loomAddr })
+    else
+      receipt = await this.dettBBSPB.methods.register(id).send({ from: this.account })
+
     if (receipt.status === true)
       window.location.reload()
     // handle the error elsewhere
@@ -314,7 +327,12 @@ class Dett {
 
     if (tx) {
       try {
-        const receipt = await this.dettBBS.methods.Reply(tx, +replyType, content).send({ from: this.account })
+        let receipt = null
+        if (this.isHdWallet)
+          receipt = await this.dettBBS.methods.Reply(tx, +replyType, content).send({ from: this.loomAddr })
+        else
+          receipt = await this.dettBBS.methods.Reply(tx, +replyType, content).send({ from: this.account })
+
         if (receipt.status === true)
           window.location.reload()
       }
@@ -331,7 +349,12 @@ class Dett {
     const post = '[' + title + ']' + content
 
     try {
-      const receipt = await this.dettBBS.methods.Post(post).send({ from: this.account })
+      let receipt = null
+      if (this.isHdWallet)
+        receipt = await this.dettBBS.methods.Post(post).send({ from: this.loomAddr })
+      else
+        receipt = await this.dettBBS.methods.Post(post).send({ from: this.account })
+
       if (receipt.status === true)
         window.location = '/'
     }
@@ -351,7 +374,12 @@ class Dett {
     const post = '[' + title + ']' + content
 
     try {
-      const receipt = await this.dettBBS.methods.edit(tx, post).send({ from: this.account })
+      let receipt = null
+      if (this.isHdWallet)
+        receipt = await this.dettBBS.methods.edit(tx, post).send({ from: this.loomAddr })
+      else
+        receipt = await this.dettBBS.methods.edit(tx, post).send({ from: this.account })
+      
       if (receipt.status === true)
         window.location = '/'
     }

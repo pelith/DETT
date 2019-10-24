@@ -85,6 +85,8 @@ class Loom {
       console.log(`Mapped ${ownerEthAddr} to ${ownerLoomAddr}`)
     }
 
+    this.client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
+    this.loomProvider = new loom.LoomProvider(this.client, privateKey)
     return true
   }
   
