@@ -214,7 +214,7 @@ const directDisplay = (article, votes, banned) => {
   if (dev) href = shortURL+'.html'
 
   const cacheTime = (Date.now()-article.timestamp)/1000
-  if (cacheTime < 30) // 30s
+  if (true || cacheTime < 30) // 30s
     href = 'content.html?tx=' + article.transaction.hash
   // else if (cacheTime < 30*60) //600-1800s github page cdn time
   //   href = shortURL+'?new' // tricky skill
