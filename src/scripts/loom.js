@@ -6,8 +6,8 @@ class Loom {
   constructor(currentProvider = null) {
     this.web3Provider = currentProvider
     this.chainId = 'extdev-plasma-us1'
-    this.writeUrl = 'wss://extdev-plasma-us1.dappchains.com/websocket'
-    this.readUrl = 'wss://extdev-plasma-us1.dappchains.com/queryws'
+    this.writeUrl = 'wss://loom-extdev.xxxx.nctu.me/websocket'
+    this.readUrl = 'wss://loom-extdev.xxxx.nctu.me/queryws'
     this.ethAddr = null
     this.client = null
     this.loomProvider = null
