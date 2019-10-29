@@ -1,13 +1,15 @@
 import { derivePath } from 'ed25519-hd-key'
 import { mnemonicToSeedSync } from 'bip39'
 import { sha256 } from 'js-sha256'
+let loom = null
 
 class Loom {
-  constructor(currentProvider = null) {
+  constructor(_loom, currentProvider = null) {
+    loom = _loom
     this.web3Provider = currentProvider
     this.chainId = 'extdev-plasma-us1'
-    this.writeUrl = 'wss://loom-extdev.xxxx.nctu.me/websocket'
-    this.readUrl = 'wss://loom-extdev.xxxx.nctu.me/queryws'
+    this.writeUrl = loom.createJSONRPCClient({ protocols: [{ url: 'https://loom-extdev.xxxx.nctu.me/rpc' }] })
+    this.readUrl = loom.createJSONRPCClient({ protocols: [{ url: 'https://loom-extdev.xxxx.nctu.me/query' }] })
     this.ethAddr = null
     this.client = null
     this.loomProvider = null

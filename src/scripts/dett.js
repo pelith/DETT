@@ -142,14 +142,9 @@ class Dett {
 
     loom = _loom
 
-    if (loom._client) {
-      web3 = new _Web3(_loom)
-    }
-    else {
-      this.loomAddr = loom.loomAddr
-      this.account = loom.ethAddr
-      web3 = new _Web3(loom.loomProvider)
-    }
+    this.loomAddr = loom.loomAddr
+    this.account = loom.ethAddr
+    web3 = new _Web3(loom.loomProvider)
     // Todo : Should be env
     // this.cacheweb3 = new _Web3(new _Web3.providers.WebsocketProvider('wss://mainnet-rpc.dexon.org/ws'))
     this.cacheweb3 = web3
