@@ -25,6 +25,14 @@ class Loom {
     return true
   }
 
+  initCacheProvider(privateKeyStr) {
+    const privateKey = loom.CryptoUtils.B64ToUint8Array(privateKeyStr)
+    this.client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
+    this.loomProvider = new loom.LoomProvider(this.client, privateKey)
+
+    return true
+  }
+
   async init() {
     this.client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
     const privateKey = loom.CryptoUtils.generatePrivateKey()
