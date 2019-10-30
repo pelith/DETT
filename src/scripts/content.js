@@ -300,7 +300,7 @@ const main = async ({ _dexon, _dett }) => {
 
   renderArticle(article, isPreRendered)
 
-  // render Comments
+  // // render Comments
   const comments = await dett.getComments(tx)
   comments.reduce( async (n,p) => {
     await n

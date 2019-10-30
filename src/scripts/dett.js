@@ -2,6 +2,7 @@ import {awaitTx, parseText} from './utils'
 
 let web3 = null
 let loom = null
+let Web3 = null
 
 const ABIBBS = [{"constant":false,"inputs":[{"name":"origin","type":"bytes32"},{"name":"content","type":"string"}],"name":"edit","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"origin","type":"bytes32"},{"name":"vote","type":"uint256"},{"name":"content","type":"string"}],"name":"Reply","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"bytes32"}],"name":"voted","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"downvotes","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"upvotes","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"content","type":"string"}],"name":"Post","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"anonymous":false,"inputs":[{"indexed":false,"name":"content","type":"string"}],"name":"Posted","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"origin","type":"bytes32"},{"indexed":false,"name":"content","type":"string"}],"name":"Edited","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"origin","type":"bytes32"},{"indexed":false,"name":"vote","type":"uint256"},{"indexed":false,"name":"content","type":"string"}],"name":"Replied","type":"event"}]
 const ABIBBSAdmin = [{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"isAdmin","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"who","type":"address"},{"name":"_isAdmin","type":"bool"}],"name":"setAdmin","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"origin","type":"bytes32"},{"name":"_banned","type":"bool"}],"name":"ban","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"banned","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"category","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[{"name":"_category","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"origin","type":"bytes32"},{"indexed":false,"name":"banned","type":"bool"},{"indexed":false,"name":"admin","type":"address"}],"name":"Ban","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"previousOwner","type":"address"},{"indexed":true,"name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"}]
@@ -136,7 +137,7 @@ class Dett {
 
   async init(_loom, _dettweb3, _Web3) {
     if (!_Web3) return console.error("Can't find Web3.")
-
+    Web3 = _Web3
     // XXX: should it pass in only the provider?
     this.__web3Injected = _dettweb3
 
@@ -172,12 +173,16 @@ class Dett {
   async setWallet(newWallet, seed) {
     if (newWallet) {
       this.dettweb3 = web3
-      Object.assign(this, this.__contracts)
+
       // TODO: unregister when changing wallet
       await loom.mapHdWallet(this.dettweb3, newWallet, seed)
       this.loomAddr = loom.loomAddr
       this.account = loom.ethAddr
       this.isHdWallet = true
+
+      web3 = new Web3(loom.loomProvider)
+      this.__contracts = this.__initContractsWith(web3)
+      Object.assign(this, this.__contracts)
     } else {
       this.dettweb3 = this.__web3Injected
       Object.assign(this, this.__contractsForInjectedWeb3)
@@ -323,13 +328,16 @@ class Dett {
     if (tx) {
       try {
         let receipt = null
-        if (this.isHdWallet)
-          receipt = await this.dettBBS.methods.Reply(tx, +replyType, content).send({ from: this.loomAddr })
-        else
-          receipt = await this.dettBBS.methods.Reply(tx, +replyType, content).send({ from: this.account })
+        // if (this.isHdWallet){
+        //   console.log(this.loomAddr)
+        //   receipt = await this.dettBBS.methods.Reply(tx, +replyType, content).send({ from: this.loomAddr })
+        // }
+        // else
+        console.log(this.account)
+        receipt = await this.dettBBS.methods.Reply(tx, +replyType, content).send({ from: this.account })
 
-        if (receipt.status === true)
-          window.location.reload()
+        // if (receipt.status === true)
+          // window.location.reload()
       }
       catch(err){
         alert(err)
@@ -374,7 +382,7 @@ class Dett {
         receipt = await this.dettBBS.methods.edit(tx, post).send({ from: this.loomAddr })
       else
         receipt = await this.dettBBS.methods.edit(tx, post).send({ from: this.account })
-      
+
       if (receipt.status === true)
         window.location = '/'
     }
