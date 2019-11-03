@@ -132,7 +132,6 @@ class Dett {
     this.perPageLength = perPageLength
     this.loomAddr = null
     this.defaultCaller = defaultCaller
-    this.isHdWallet = false
   }
 
   async init(_loom, _dettweb3, _Web3) {
@@ -178,7 +177,7 @@ class Dett {
       await loom.mapHdWallet(this.dettweb3, newWallet, seed)
       this.loomAddr = loom.loomAddr
       this.account = loom.ethAddr
-      this.isHdWallet = true
+      this.dettweb3.eth.defaultAccount = this.account
 
       web3 = new Web3(loom.loomProvider)
       this.__contracts = this.__initContractsWith(web3)
@@ -298,10 +297,7 @@ class Dett {
 
   async registerName(id, registerFee) {
     let receipt = null
-    if (this.isHdWallet)
-      receipt = await this.dettBBSPB.methods.register(id).send({ from: this.loomAddr })
-    else
-      receipt = await this.dettBBSPB.methods.register(id).send({ from: this.account })
+    receipt = await this.dettBBSPB.methods.register(id).send({ from: this.account })
 
     if (receipt.status === true)
       window.location.reload()
@@ -328,16 +324,10 @@ class Dett {
     if (tx) {
       try {
         let receipt = null
-        // if (this.isHdWallet){
-        //   console.log(this.loomAddr)
-        //   receipt = await this.dettBBS.methods.Reply(tx, +replyType, content).send({ from: this.loomAddr })
-        // }
-        // else
-        console.log(this.account)
         receipt = await this.dettBBS.methods.Reply(tx, +replyType, content).send({ from: this.account })
 
-        // if (receipt.status === true)
-          // window.location.reload()
+        if (receipt.status === true)
+          window.location.reload()
       }
       catch(err){
         alert(err)
@@ -353,10 +343,7 @@ class Dett {
 
     try {
       let receipt = null
-      if (this.isHdWallet)
-        receipt = await this.dettBBS.methods.Post(post).send({ from: this.loomAddr })
-      else
-        receipt = await this.dettBBS.methods.Post(post).send({ from: this.account })
+      receipt = await this.dettBBS.methods.Post(post).send({ from: this.account })
 
       if (receipt.status === true)
         window.location = '/'
@@ -378,10 +365,7 @@ class Dett {
 
     try {
       let receipt = null
-      if (this.isHdWallet)
-        receipt = await this.dettBBS.methods.edit(tx, post).send({ from: this.loomAddr })
-      else
-        receipt = await this.dettBBS.methods.edit(tx, post).send({ from: this.account })
+      receipt = await this.dettBBS.methods.edit(tx, post).send({ from: this.account })
 
       if (receipt.status === true)
         window.location = '/'

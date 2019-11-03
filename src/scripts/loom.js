@@ -38,12 +38,8 @@ class Loom {
   }
 
   async init() {
-    console.log(this.web3Provider)
-
     // client
     this.client = new loom.Client(this.chainId, this.writeUrl, this.readUrl)
-    console.log('456')
-    console.log(this.client)
 
     // loom key
     const privateKey = loom.CryptoUtils.generatePrivateKey()
@@ -52,7 +48,6 @@ class Loom {
     // eth signer
     const ethersProvider = new ethers.providers.Web3Provider(this.web3Provider)
     const signer = ethersProvider.getSigner()
-    console.log(signer)
     try {
       this.ethAddr = await signer.getAddress()
     } catch(err) {
