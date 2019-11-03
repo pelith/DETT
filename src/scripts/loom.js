@@ -9,10 +9,9 @@ class Loom {
     this.web3Provider = currentProvider
     this.chainId = 'extdev-plasma-us1'
 
-    // this.writeUrl = loom.createJSONRPCClient({ protocols: [{ url: 'http://extdev-plasma-us1.dappchains.com/rpc' }] })
-    // this.readUrl = loom.createJSONRPCClient({ protocols: [{ url: 'http://extdev-plasma-us1.dappchains.com/query' }] })
-    this.writeUrl = loom.createJSONRPCClient({ protocols: [{ url: 'http://loom-extdev.xxxx.nctu.me/rpc' }] })
-    this.readUrl = loom.createJSONRPCClient({ protocols: [{ url: 'http://loom-extdev.xxxx.nctu.me/query' }] })
+    this.chainId = 'default'
+    this.writeUrl = loom.createJSONRPCClient({ protocols: [{ url: 'https://loom-basechain.xxxx.nctu.me/rpc' }] })
+    this.readUrl = loom.createJSONRPCClient({ protocols: [{ url: 'https://loom-basechain.xxxx.nctu.me/query' }] })
 
     this.ethAddr = null
     this.client = null
