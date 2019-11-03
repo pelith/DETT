@@ -1,7 +1,7 @@
 import { fromMasterSeed } from 'ethereumjs-wallet/hdkey'
 import { mnemonicToSeed } from 'bip39'
 import Loom from './loom.js'
-const validNetworkID = 4
+const validNetworkID = 1
 
 class EventEmitter{
   constructor(){

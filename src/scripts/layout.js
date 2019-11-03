@@ -197,7 +197,7 @@ const initLoginForm = async ($elem, _dexon) => {
 
   toggleDescStatus($elem.find('.wrapper--injected'), false)
   $elem.find('.--injectedProviderStatus').text('未偵測到錢包')
-  $elem.find('.wrapper--injected .desc-err').text('需要先安裝 DEXON Wellet 或 MetaMask 等擴充套件來連線到 DEXON。')
+  $elem.find('.wrapper--injected .desc-err').text('需要先安裝 MetaMask 等擴充套件來連線到 DETT')
 
   // wallet change <-> login form display
   _dexon.on('update', account => {
@@ -237,7 +237,7 @@ const initLoginForm = async ($elem, _dexon) => {
       $elem.find('.--injectedProviderStatus').text('⚠ 無法使用')
       optInjected.prop('disabled', true)
       toggleDescStatus($elem.find('.wrapper--injected'), false)
-      $elem.find('.wrapper--injected .desc-err').text('在錯誤的網路上。\n請打開錢包，並將網路切到 "DEXON Mainnet"。')
+      $elem.find('.wrapper--injected .desc-err').text('在錯誤的網路上。\n請打開錢包，並將網路切到 "Mainnet"。')
     }
   })
 }

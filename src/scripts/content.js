@@ -162,7 +162,7 @@ const keyboardHook = () => {
 }
 
 const renderArticle = (article, isPreRendered) => {
-  document.title = article.title + ' - Gossiping - DEXON BBS'
+  document.title = article.title + ' - Gossiping - DETT'
 
   const authorLink = $('<a class="--link-to-addr hover" target="_blank"></a>')
                     .text(parseUser(article.origAuthor, article.authorMeta))
