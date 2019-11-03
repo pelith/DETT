@@ -7,9 +7,8 @@ class Loom {
   constructor(_loom, currentProvider = null) {
     loom = _loom
     this.web3Provider = currentProvider
-    this.chainId = 'extdev-plasma-us1'
 
-    this.chainId = 'default'
+    this.chainId = 'default' // 'extdev-plasma-us1'
     this.writeUrl = loom.createJSONRPCClient({ protocols: [{ url: 'https://loom-basechain.xxxx.nctu.me/rpc' }] })
     this.readUrl = loom.createJSONRPCClient({ protocols: [{ url: 'https://loom-basechain.xxxx.nctu.me/query' }] })
 
