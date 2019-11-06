@@ -404,14 +404,14 @@ class Dett extends EventEmitter {
       gas: 21000,
     }
 
-    if (this.dettweb3 != this.__web3Injected) {
-      const ok = this.confirmTx(txObj)
-      if (!ok) {
-        return Promise.reject(new Error('User denied to send transaction with seed.'))
-      }
-    }
 
-    return this.dettweb3.eth.sendTransaction(txObj)
+    const ok = this.confirmTx(txObj)
+    if (!ok) {
+      return Promise.reject(new Error('User denied to send transaction with seed.'))
+    }
+    
+
+    return wWeb3.eth.sendTransaction(txObj)
   }
 
   isDettTx(tx){
