@@ -1,4 +1,3 @@
-import Dexon from './dexon.js'
 
 import {parseText, parseUser, web3ErrorToString} from './utils.js'
 
@@ -84,14 +83,13 @@ const doNewRegister = async nick => {
   await dett.registerName(nick, registerFee)
 }
 
-const main = async ({ _dexon, _dett }) => {
+const main = async (_dett) => {
   dett = _dett
 
-  _dexon.identityManager.on('login', ({account, wallet}) => {
-    render(account)
-    dett.setWallet(wallet, _dexon.identityManager.__seed)
-  })
-  _dexon.identityManager.init()
+  if (dett.account) {
+    await render(dett.account)
+  }
+  dett.on('account', render)
 
   const elNickname = $('#register-nickname')
   elNickname.on('input', evt => checkRules($(evt.currentTarget).val()))

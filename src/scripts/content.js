@@ -267,7 +267,7 @@ const displayReply = (comment) => {
 
 const error = () => { $('#main-content-content').text('404 - Page not found.') }
 
-const main = async ({ _dexon, _dett }) => {
+const main = async (_dett) => {
   // set _dett to global
   dett = _dett
   if (window.dev) dev = true
@@ -287,11 +287,10 @@ const main = async ({ _dexon, _dett }) => {
   if (!tx) return error()
   if (!tx.match(/^0x[a-fA-F0-9]{64}$/g)) return error()
 
-  _dexon.identityManager.on('login', ({account, wallet}) => {
-    render(account)
-    dett.setWallet(wallet, _dexon.identityManager.__seed)
-  })
-  _dexon.identityManager.init()
+  if (dett.account) {
+    await render(dett.account)
+  }
+  dett.on('account', render)
 
   // render Article
   const article = await dett.getArticle(tx, true)

@@ -1,4 +1,3 @@
-import Dexon from './dexon.js'
 
 import {parseText, parseUser, getUrlParameter} from './utils.js'
 
@@ -13,13 +12,12 @@ const checkTitle = () => { return $("#bbs-title").val().length > 0 }
 const check = () => { return (checkContent() && checkTitle()) }
 
 const render = async (_account) => {
-  dett.account = _account
   if (_account){
     const nickname = await dett.getMetaByAddress(_account)
     if (nickname.name) {
-      $("#bbs-user").text(parseUser(nickname.name))
+      $("#post-bbs-user").text(parseUser(nickname.name))
     } else {
-      $("#bbs-user").text(parseUser(_account))
+      $("#post-bbs-user").text(parseUser(_account))
     }
   }
   else
@@ -87,15 +85,15 @@ const keyboardHook = () => {
     }
   })
 }
-const main = async ({ _dexon, _dett }) => {
+const main = async (_dett) => {
   // set _dett to global
   dett = _dett
 
-  _dexon.identityManager.on('login', ({account, wallet}) => {
-    render(account)
-    dett.setWallet(wallet, _dexon.identityManager.__seed)
-  })
-  _dexon.identityManager.init()
+  console.log(dett.account)
+  if (dett.account) {
+    await render(dett.account)
+  }
+  dett.on('account', render)
 
   // get reply tx
   const rtx = getUrlParameter('rtx')

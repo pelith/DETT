@@ -18,7 +18,7 @@ const render = (_account) => {
   }
 }
 
-const main = async ({ _dett, _dexon }) => {
+const main = async (_dett) => {
   // for dev
   if (+window.localStorage.getItem('dev')) dev = true
   if (+window.localStorage.getItem('hotkey-mode')) keyboardHook()
@@ -74,6 +74,8 @@ const main = async ({ _dett, _dexon }) => {
     articles = await dett.getArticles()
   }
 
+  console.log(articles)
+
   await articles.reduce( async (n,p) => {
     await n
     directDisplay(...await p)
@@ -86,12 +88,10 @@ const main = async ({ _dett, _dexon }) => {
     displayAnnouncement('[公告] 領取免費的 DEXON 代幣 &amp; DEXON BBS 使用教學', 'about'+(dev?'.html':''), 'Admin')
   }
 
-  // here the articles are loaded completely; do render here
-  _dexon.identityManager.on('login', ({account, wallet}) => {
-    render(account)
-    dett.setWallet(wallet, _dexon.identityManager.__seed)
-  })
-  _dexon.identityManager.init()
+  if (dett.account) {
+    await render(dett.account)
+  }
+  dett.on('account', render)
 
   if (+sessionStorage.getItem('focus-state')===2){
     const post =  $('.r-list-container > .r-ent > div > a[href="'+sessionStorage.getItem('focus-href')+'"]')

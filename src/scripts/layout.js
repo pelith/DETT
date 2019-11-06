@@ -1,19 +1,23 @@
-import { generateMnemonic } from 'bip39'
+import { fromMasterSeed } from 'ethereumjs-wallet/hdkey'
+import { generateMnemonic, mnemonicToSeedSync } from 'bip39'
 import patchWeb3 from './patch-web3.js'
 
 patchWeb3()
 
-import Dexon from './dexon.js'
+const Web3Provider = Web3Vanilla.Web3Provider
+const { InjectedConnector, NetworkOnlyConnector, PrivateKeyConnector } = Web3Vanilla.Connectors
+
+import LoomProvider from './lib/loom.js'
 import Dett from './dett.js'
 import {parseUser} from './utils.js'
 
 let dett = null
 let account = ''
-let lastError
-let metaCache
 
-const $topBar = $('#topbar')
-const $bbsUser = $topBar.find('#bbs-user')
+let loomProvider = null
+
+window.wWeb3 = null
+window.wWeb3Provider = null
 
 const attachDropdown = () => {
   $('.user-menu > .trigger').click((e) => {
@@ -26,14 +30,6 @@ const attachDropdown = () => {
   })
 
   $(document).click((e) => { $('.user-menu.shown').toggleClass('shown') })
-}
-
-const toggleDescStatus = ($el, ok) => {
-  const $elOk = $el.find('.desc-ok')
-  const $elErr = $el.find('.desc-err')
-  $elOk[ok ? 'show' : 'hide']()
-  $elErr[ok ? 'hide' : 'show']()
-  return [$elOk, $elErr]
 }
 
 const hotkey = () => {
@@ -70,60 +66,250 @@ const renderTopbar = async (_account) => {
   }
 }
 
-const initLoginForm = async ($elem, _dexon) => {
-  const manager = _dexon.identityManager
-  const bbsLoginButton = $('#bbs-modal-login')
-  const optAll = $elem.find('[name="accountSource"]')
-  const optInjected = optAll.filter('[value="injected"]')
-  const optSeed = optAll.filter('[value="seed"]')
+class LoginDialog {
+  constructor(_target) {
+    this.target = _target
+    this.bbsLoginButton = $('#bbs-modal-login')
+    this.optAll = this.target.find('[name="accountSource"]')
+    this.optInjected = this.optAll.filter('[value="injected"]')
+    this.optSeed = this.optAll.filter('[value="seed"]')
 
-  // restore select options
-  $('#loginModal').on('show.bs.modal', function (e) {
+    this.init()
+
+    // event
+    this.optAll.click(evt => {
+      this.updateViewFromType(evt.currentTarget.value)
+      // already handled in separate handler
+      if (evt.currentTarget.value != 'injected') {
+        this.bbsLoginButton.prop('disabled', false)
+      }
+    })
+
+    this.bbsLoginButton.click(this.confirm.bind(this))
+
+    $('#loginModal').on('show.bs.modal', this.show.bind(this))
+  }
+
+  init() {
+    this.initInjectedWallet()
+    this.initPrivateKeyWallet()
+
+
+    // PrivateKey
+    $('#commitSeedPhrase').click(() => {
+      const newPhrase = this.target.find('[name="seed"]').val().trim()
+      if (!newPhrase) {
+        alert('請輸入助記詞')
+        return
+      }
+      localStorage.setItem('dett-seed', newPhrase)
+      this.updateViewForSeed(newPhrase)
+    })
+
+    $('#generateSeedPhrase').click(() => {
+      this.generateSeed()
+      this.target.find('.--seedAccountAddress').text('[請將助記詞妥善備份後按確認]')
+    })
+
+    $('#deleteSeedPhrase').click(() => {
+      const ok = confirm('確定刪除助記詞？此動作無法恢復！')
+      if (ok) {
+        localStorage.removeItem('dett-seed')
+        location.reload()
+      }
+    })
+  }
+
+  show() {
+    // initial state
+    $('#seedConfigArea').hide()
+
+    this.restoreSelectedOption()
+
+    if (this.injectedWeb3Provider) {
+      this.bbsLoginButton.prop('disabled', false)
+      this.toggleDescStatus(this.target.find('.wrapper--injected'), true)
+      this.target.find('.wrapper--injected .desc-err').hide()
+      this.target.find('.--injectedProviderStatus').text('正常')
+    } else {
+      this.toggleDescStatus(this.target.find('.wrapper--injected'), false)
+      this.optInjected.attr('disabled', true)
+      this.target.find('.--injectedProviderStatus').text('未偵測到錢包')
+      this.target.find('.wrapper--injected .desc-err').text('請先安裝 MetaMask 或是 手機錢包 開啟')
+    }
+  }
+
+  async confirm() {
+    const loginType = this.getLoginFormType()
+    window.localStorage.setItem('dett-login-type', loginType)
+    switch (loginType) {
+      case 'injected':
+        this.bbsLoginButton.prop('disabled', true)
+        this.toggleDescStatus(this.target.find('.wrapper--injected'), false)
+        this.target.find('.wrapper--injected .desc-err').text('請同意錢包連線')
+
+        // reset inject state
+        this.injectedWeb3Provider.event.removeAllListeners()
+        this.injectedWeb3Provider.unsetConnector()
+        this._error = this.injectedWeb3Provider.event.once('error', (error) => {
+          if (error) {
+            if (error.code === 'ETHEREUM_ACCESS_DENIED') {
+              this.target.find('.--injectedProviderStatus').text('連線請求失敗')
+              this.target.find('.wrapper--injected .desc-err').text('你已拒絕錢包連線，請再次登入')
+            } else if (error.code === 'UNSUPPORTED_NETWORK') {
+              this.target.find('.--injectedProviderStatus').text('錯誤的網路')
+              this.target.find('.wrapper--injected .desc-err').text('請打開錢包，並切換到 乙太坊 主網路')
+            }
+          }
+
+          // remove useless onceActive
+          this.injectedWeb3Provider.event.removeAllListeners()
+          this.bbsLoginButton.prop('disabled', false)
+        })
+
+        this.injectedWeb3Provider.event.once('active', async (active) => {
+          if (active) {
+            // remove useless onceError
+            this.injectedWeb3Provider.event.removeAllListeners()
+
+            wWeb3 = this.injectedWeb3Provider.library
+            wWeb3Provider = this.injectedWeb3Provider
+
+            dett.account = wWeb3Provider.account
+            renderTopbar(wWeb3Provider.account)
+            await loomProvider.setEthereumWallet(wWeb3Provider.provider)
+            await dett.init(loomProvider)
+
+            this.injectedWeb3Provider.event.on('accountChanged', async (account) => {
+              dett.account = account
+              renderTopbar(account)
+              await loomProvider.setEthereumWallet(wWeb3Provider.provider)
+              await dett.init(loomProvider)
+            })
+
+            this.injectedWeb3Provider.event.on('error', (error) => {
+              console.log(error)
+            })
+
+            this.bbsLoginButton.prop('disabled', false)
+            this.close()
+          }
+        })
+
+        await this.injectedWeb3Provider.setConnector('MetaMask')
+        break
+      case 'seed':
+        this.bbsLoginButton.prop('disabled', true)
+        const seedphrase = localStorage.getItem('dett-seed')
+        const seed = mnemonicToSeedSync(seedphrase)
+        const wallet = fromMasterSeed(seed).derivePath(`m/44'/60'/0'/0`).getWallet()
+        const privateKey = wallet.getPrivateKey().toString('hex')
+
+        const PrivateKey = new PrivateKeyConnector({
+          providerURL: 'https://mainnet.infura.io/v3/a28f35f70591419cbf422c5e58cd047d',
+          privateKey: privateKey,
+        })
+
+        // for bypass obfuscator
+        const connectors = {}
+        connectors.PrivateKey = PrivateKey
+
+        this.privateKeyWeb3Provider = new Web3Provider({
+          connectors: connectors,
+          libraryName: 'web3.js',
+          web3Api: Web3,
+        })
+
+        await this.privateKeyWeb3Provider.setConnector('PrivateKey')
+        wWeb3 = this.privateKeyWeb3Provider.library
+        wWeb3Provider = this.privateKeyWeb3Provider
+
+        dett.account = wWeb3Provider.account
+        renderTopbar(wWeb3Provider.account)
+        await loomProvider.setEthereumWallet(wWeb3Provider.provider)
+        await dett.init(loomProvider)
+        this.bbsLoginButton.prop('disabled', false)
+        this.close()
+        break
+      case 'vistor':
+        wWeb3 = null
+        wWeb3Provider = null
+
+        if (this.injectedWeb3Provider) {
+          this.injectedWeb3Provider.event.removeAllListeners()
+          this.injectedWeb3Provider.unsetConnector()
+        }
+        else if (this.privateKeyWeb3Provider) {
+          this.privateKeyWeb3Provider.unsetConnector()
+        }
+        renderTopbar('')
+        this.close()
+        break
+      default:
+    }
+  }
+
+  close() {
+    $('#loginModal').modal('hide')
+  }
+
+  initInjectedWallet() {
+    if (window.ethereum) {
+      const MetaMask = new InjectedConnector({ supportedNetworks: [1] })
+      const connectors = {}
+      connectors.MetaMask = MetaMask
+      this.injectedWeb3Provider = new Web3Provider({
+        connectors: connectors,
+        libraryName: 'web3.js',
+        web3Api: Web3,
+      })
+    }
+  }
+
+  initPrivateKeyWallet() {
+    const seed = localStorage.getItem('dett-seed')
+    if (seed === null) {
+      const newPhrase = this.generateSeed()
+      localStorage.setItem('dett-seed', newPhrase)
+    }
+
+    this.updateViewForSeed(seed)
+  }
+
+  toggleDescStatus($el, ok) {
+    const $elOk = $el.find('.desc-ok')
+    const $elErr = $el.find('.desc-err')
+    $elOk[ok ? 'show' : 'hide']()
+    $elErr[ok ? 'hide' : 'show']()
+    return [$elOk, $elErr]
+  }
+
+  restoreSelectedOption() {
     const loginType = window.localStorage.getItem('dett-login-type')
-    const $visitorWrapper = $elem.find('.wrapper--vistor')
-    updateViewFromType(loginType)
+    const $visitorWrapper = this.target.find('.wrapper--vistor')
+    this.updateViewFromType(loginType)
     if (loginType === 'injected') {
-      $elem.prop("accountSource")[0].checked = true
+      this.target.prop("accountSource")[0].checked = true
       $visitorWrapper.show()
-      bbsLoginButton.text('切換')
+      this.bbsLoginButton.text('切換')
     }
     else if (loginType === 'seed') {
-      $elem.prop("accountSource")[1].checked = true
-      optSeed.click()
+      this.target.prop("accountSource")[1].checked = true
       $visitorWrapper.show()
-      bbsLoginButton.text('切換')
+      this.bbsLoginButton.text('切換')
     }
     else if (loginType === 'vistor') {
-      $elem.prop("accountSource")[2].checked = true
+      this.target.prop("accountSource")[2].checked = true
       $visitorWrapper.hide()
-      bbsLoginButton.text('登入')
+      this.bbsLoginButton.text('登入')
     }
-  })
-
-  const getLoginFormType = () => {
-    return $elem[0].accountSource.value || ''
   }
 
-  // TODO: handle the case where no provider is available
-  $elem.find('.--injectedProviderName').text(_dexon.providerName)
-
-  const generateSeed = () => {
-    // generate then commit
-    const seedphrase = generateMnemonic()
-    $elem.find('[name="seed"]').val(seedphrase)
-    return seedphrase
+  getLoginFormType() {
+    return this.target[0].accountSource.value || ''
   }
 
-  const updateViewForSeed = async () => {
-    const $el = $elem.find('.wrapper--seed')
-    const [$elOk, $elErr] = toggleDescStatus($el, false)
-    $elErr.text('正在由助記詞還原地址...')
-    const { seedAddress, walllet } = manager
-    toggleDescStatus($el, true)
-    $elem.find('.--seedAccountAddress').text(seedAddress)
-  }
-
-  const updateViewFromType = type => {
+  updateViewFromType(type) {
     if (type == 'seed') {
       $('#seedConfigArea').show()
     } else {
@@ -131,155 +317,49 @@ const initLoginForm = async ($elem, _dexon) => {
     }
   }
 
-  optInjected.click(() => {
-    // no error but no address => we need the user to login manually
-    if (!lastError && !_dexon.selectedAddress) {
-      _dexon.login()
-      // still disable the login button
-      $('#bbs-modal-login').prop('disabled', true)
-    } else {
-      $('#bbs-modal-login').prop('disabled', false)
-    }
-  })
-
-  optSeed.click(async () => {
-    if (manager.seed == null) {
-      const seedphrase = generateSeed()
-      await manager.setHdWallet(seedphrase)
-      await updateViewForSeed()
-    }
-  })
-
-  optAll.click(evt => {
-    updateViewFromType(evt.currentTarget.value)
-    // already handled in separate handler
-    if (evt.currentTarget.value != 'injected') {
-      bbsLoginButton.prop('disabled', false)
-    }
-  })
-
-  $('#commitSeedPhrase').click(async () => {
-    const newPhrase = $elem.find('[name="seed"]').val().trim()
-    if (!newPhrase) {
-      alert('請輸入助記詞')
-      return
-    }
-    $elem.find('[name="seed"]').val(newPhrase)
-    await manager.setHdWallet(newPhrase)
-    await updateViewForSeed()
-  })
-  $('#generateSeedPhrase').click(() => {
-    generateSeed()
-    $elem.find('.--seedAccountAddress').text('[請將助記詞妥善備份後按確認]')
-  })
-  $('#deleteSeedPhrase').click(() => {
-    const ok = confirm('確定刪除助記詞？此動作無法恢復！')
-    if (ok) {
-      manager.seed = null
-      location.reload()
-    }
-  })
-
-  bbsLoginButton.click(() => {
-    const loginType = getLoginFormType()
-    window.localStorage.setItem('dett-login-type', loginType)
-    manager.commitLoginType(loginType)
-    $('#loginModal').modal('hide')
-  })
-
-  // initial state
-  $('#seedConfigArea').hide()
-
-  if (manager.seed != null) {
-    $elem.find('[name="seed"]').val(manager.seed)
-    updateViewForSeed()
+  generateSeed() {
+    // generate then commit
+    const seedphrase = generateMnemonic()
+    this.target.find('[name="seed"]').val(seedphrase)
+    return seedphrase
   }
 
-  toggleDescStatus($elem.find('.wrapper--injected'), false)
-  $elem.find('.--injectedProviderStatus').text('未偵測到錢包')
-  $elem.find('.wrapper--injected .desc-err').text('需要先安裝 DEXON Wellet 或 MetaMask 等擴充套件來連線到 DEXON。')
-
-  // wallet change <-> login form display
-  _dexon.on('update', account => {
-    lastError = null
-    optInjected.prop('disabled', false)
-
-    if (account) {
-      $('#bbs-modal-login').prop('disabled', false)
-      toggleDescStatus($elem.find('.wrapper--injected'), true)
-      $elem.find('.wrapper--injected .desc-err').hide()
-      $elem.find('.--injectedProviderStatus').text('正常')
-      $elem.find('.--injectedAccountAddress').text(account)
-
-    } else {
-      if (getLoginFormType() == 'injected') {
-        optInjected.prop('checked', false)
-      }
-      toggleDescStatus($elem.find('.wrapper--injected'), false)
-      $elem.find('.--injectedProviderStatus').text('需要登入')
-      $elem.find('.wrapper--injected .desc-err').text('按這裡登入錢包')
-    }
-  })
-
-  _dexon.on('error', (err) => {
-    lastError = err
-  })
-
-  _dexon.on('updateNetwork', ({id, isValid}) => {
-    if (isValid) {
-      optInjected.prop('disabled', false)
-      // login info is updated in separate event
-    } else {
-      if (getLoginFormType() == 'injected') {
-      // the wrong network makes this option no longer valid
-        optInjected.prop('checked', false)
-      }
-      $elem.find('.--injectedProviderStatus').text('⚠ 無法使用')
-      optInjected.prop('disabled', true)
-      toggleDescStatus($elem.find('.wrapper--injected'), false)
-      $elem.find('.wrapper--injected .desc-err').text('在錯誤的網路上。\n請打開錢包，並將網路切到 "DEXON Mainnet"。')
-    }
-  })
+  updateViewForSeed(seedphrase) {
+    const $el = this.target.find('.wrapper--seed')
+    const [$elOk, $elErr] = this.toggleDescStatus($el, false)
+    $elErr.text('正在由助記詞還原地址...')
+    const seed = mnemonicToSeedSync(seedphrase)
+    const wallet = fromMasterSeed(seed).derivePath(`m/44'/60'/0'/0`).getWallet()
+    const seedAddress = wallet.getAddressString()
+    this.toggleDescStatus($el, true)
+    this.target.find('.--seedAccountAddress').text(seedAddress)
+    this.target.find('[name="seed"]').val(seedphrase)
+  }
 }
 
 window._layoutInit = async () => {
-  // init dexon account first
-  const _dexon = new Dexon(window.dexon)
-  const manager = _dexon.identityManager
+  loomProvider =  new LoomProvider({
+    chainId: 'default',
+    writeUrl: 'https://loom-basechain.xxxx.nctu.me/rpc',
+    readUrl: 'https://loom-basechain.xxxx.nctu.me/query',
+    libraryName: 'web3.js',
+    web3Api: Web3,
+  })
+  loomProvider.setNetworkOnly()
 
-  // recover seed state; login form can make use of the wallet object
-  if (manager.seed != null) {
-    await manager.setHdWallet(manager.seed)
-  }
+  dett = new Dett()
+  await dett.init(loomProvider)
 
-  // populate login form event / initial state
-  if ($topBar[0]) {
-    await new Promise(resolve => {
-      $('#fragments').load($('#fragmentsSrc').attr('href'), resolve)
-    })
-    await initLoginForm($('#loginForm'), _dexon)
-  }
 
-  _dexon.on('update', (account) => {
-    manager.injectedAddress = account
-    if (manager.loginType == 'injected') {
-      manager.commitLoginType('injected')
-    }
+  await new Promise(resolve => {
+    $('#fragments').load($('#fragmentsSrc').attr('href'), resolve)
   })
 
-  await _dexon.init()
-
-  const _dett = new Dett()
-  dett = _dett
-
-  manager.on('login', ({account}) => {
-    dett.account = account
-    if ($topBar[0]) {
-      renderTopbar(account, _dexon)
-    }
-  })
-
-  await _dett.init(_dexon.loom, _dexon.dexonWeb3, Web3)
+  const loginDialog = new LoginDialog($('#loginForm'))
+  if (localStorage.getItem('dett-login-type')) {
+    loginDialog.show()
+    await loginDialog.confirm()
+  }
 
   hotkey()
 
@@ -289,5 +369,5 @@ window._layoutInit = async () => {
   if (+window.localStorage.getItem('dev'))
     window.dev = true
 
-  return { _dexon, _dett }
+  return dett
 }
