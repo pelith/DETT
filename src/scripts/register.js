@@ -56,7 +56,7 @@ const checkRules = async nick => {
       $('#register-ok').show()
       $('#register-no').hide()
       // XXX: strange web3 bug. fee returns a bn object instead of a string
-      $('#register-fee').text(`${Web3.utils.fromWei(registerFee.toString())} DXN`)
+      $('#register-fee').text(`${Web3.utils.fromWei(registerFee.toString())} ETH`)
     } else {
       $('#register-ok').hide()
       $('#register-no').show()

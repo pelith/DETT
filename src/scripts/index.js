@@ -33,7 +33,7 @@ const main = async (_dett) => {
   */
 
   let articles = []
-  let addAnnouncement = false
+  let addAnnouncement = true
   const root = dev ? 'index.html' : ''
   $("#oldpage").attr('href', root+'?p=1')
 
@@ -74,7 +74,7 @@ const main = async (_dett) => {
     articles = await dett.getArticles()
   }
 
-  console.log(articles)
+  // console.log(articles)
 
   await articles.reduce( async (n,p) => {
     await n
@@ -84,8 +84,7 @@ const main = async (_dett) => {
   // temporary fix announcement
   if (addAnnouncement){
     $('.r-list-container.action-bar-margin.bbs-screen').append($('<div class="r-list-sep"></div>'))
-    displayAnnouncement('[公告] DEXON BBS 搬家預告', 'mayday'+(dev?'.html':''), 'Admin')
-    displayAnnouncement('[公告] 領取免費的 DEXON 代幣 &amp; DEXON BBS 使用教學', 'about'+(dev?'.html':''), 'Admin')
+    displayAnnouncement('[公告] DETT 使用教學', 'about'+(dev?'.html':''), 'Admin')
   }
 
   if (dett.account) {
@@ -229,7 +228,7 @@ const directDisplay = (article, votes, banned) => {
     </div>
     <div class="meta">
       <div class="author">
-        <a class="--link-to-addr hover" href="https://extdev-blockexplorer.dappchains.com/address/${article.author}" target="_blank" data-address="${article.origAuthor}">
+        <a class="--link-to-addr hover" href="https://basechain-blockexplorer.dappchains.com/address/${article.author}" target="_blank" data-address="${article.origAuthor}">
           ${parseUser(article.origAuthor, article.authorMeta)}
         </a>
       </div>

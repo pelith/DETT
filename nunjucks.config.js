@@ -4,8 +4,8 @@ module.exports = {
   root: './src',
   data: {
     showTopbar: true,
-    title: 'DEXON BBS',
-    description: '基於 DEXON 智慧合約的 BBS 系統' ,
+    title: 'LOOM BBS',
+    description: '基於 LOOM 智慧合約的 BBS 系統' ,
     canonicalUrl,
   },
   filters: {

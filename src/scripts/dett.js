@@ -422,7 +422,7 @@ class Dett extends EventEmitter {
 
   confirmTx(txObj) {
     const { to, value } = txObj
-    const message = `你確定要將你的 ${Web3.utils.fromWei(value)} DXN 轉帳到 ${to}？`
+    const message = `你確定要將你的 ${Web3.utils.fromWei(value)} ETH 轉帳到 ${to}？`
     return confirm(message)
   }
 }
