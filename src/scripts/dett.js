@@ -79,10 +79,10 @@ class PostBase {
 PostBase._metaCache = new Map()
 
 class Article extends PostBase {
-  constructor(_transaction, _log) {
+  constructor(_transaction, _rawContent) {
     super()
     this.transaction = _transaction
-    this.rawContent = loomWeb3.utils.hexToUtf8('0x' + _log.data.slice(130, -6))
+    this.rawContent = _rawContent
     this.titleMatch = false
     this.title = this.getTitle()
     this.content = this.getContent()
@@ -231,12 +231,20 @@ class Dett extends EventEmitter {
     })
   }
 
-  async getArticle(tx, checkEdited){
+  async getArticle(tx, returnValues, checkEdited){
     const transaction = await loomWeb3.eth.getTransaction(tx)
     // console.log(transaction)
-    const txReceipt = await loomWeb3.eth.getTransactionReceipt(tx)
-    // console.log(txReceipt)
-    const article = new Article(transaction, txReceipt.logs[0])
+    let rawContent = null
+
+    if (returnValues) {
+      rawContent = returnValues[0]
+    }
+    else {
+      const transactionReceipt = await loomWeb3.eth.getTransactionReceipt(tx)
+      rawContent = loomWeb3.utils.hexToUtf8('0x' + transactionReceipt.logs[0].data.slice(130, -6))
+    }
+
+    const article = new Article(transaction, rawContent)
     await article.init()
 
     if (checkEdited) {

@@ -293,7 +293,7 @@ const main = async (_dett) => {
   dett.on('account', render)
 
   // render Article
-  const article = await dett.getArticle(tx, true)
+  const article = await dett.getArticle(tx, null, true)
   // check transaction to address is bbs contract
   if (!article) return error()
 
