@@ -109,8 +109,8 @@ const main = async (_dett) => {
   registerFee = await dett.getRegisterFee()
   checkRules(elNickname.val())
 
-  const history = await dett.getRegisterHistory()
-  console.log('name history', history)
+  // const history = await dett.getRegisterHistory()
+  // console.log('name history', history)
 }
 
 _layoutInit().then(main)

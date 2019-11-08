@@ -1,15 +1,12 @@
 import { fromMasterSeed } from 'ethereumjs-wallet/hdkey'
 import { generateMnemonic, mnemonicToSeedSync } from 'bip39'
-import patchWeb3 from './patch-web3.js'
-
-patchWeb3()
-
-const Web3Provider = Web3Vanilla.Web3Provider
-const { InjectedConnector, NetworkOnlyConnector, PrivateKeyConnector } = Web3Vanilla.Connectors
 
 import LoomProvider from './lib/loom.js'
 import Dett from './dett.js'
 import {parseUser} from './utils.js'
+
+const Web3Provider = Web3Vanilla.Web3Provider
+const { InjectedConnector, NetworkOnlyConnector, PrivateKeyConnector } = Web3Vanilla.Connectors
 
 let dett = null
 let account = ''
@@ -17,7 +14,7 @@ let account = ''
 let loomProvider = null
 
 window.wWeb3 = null
-window.wWeb3Provider = null
+let wWeb3Provider = null
 
 const attachDropdown = () => {
   $('.user-menu > .trigger').click((e) => {
