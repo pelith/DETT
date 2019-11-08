@@ -25,12 +25,12 @@ const main = async (_dett) => {
 
   dett = _dett
 
-  let milestones = [] // await dett.BBSCache.methods.getMilestones().call({ from: dett.defaultCaller })
-  /*
+  let milestones = await dett.BBSCache.methods.getMilestones().call({ from: dett.defaultCaller })
+  
   milestones = milestones.map((milestone) => {
     return dett.cacheweb3.utils.hexToUtf8(milestone)
   })
-  */
+  
 
   let articles = []
   let addAnnouncement = true
@@ -213,7 +213,7 @@ const directDisplay = (article, votes, banned) => {
   if (dev) href = shortURL+'.html'
 
   const cacheTime = (Date.now()-article.timestamp)/1000
-  if (true || cacheTime < 30) // 30s
+  if (cacheTime < 30) // 30s
     href = 'content.html?tx=' + article.transaction.hash
   // else if (cacheTime < 30*60) //600-1800s github page cdn time
   //   href = shortURL+'?new' // tricky skill

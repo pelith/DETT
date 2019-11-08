@@ -82,8 +82,8 @@ class LoomProvider {
   }
 
   // dirty hook
-  setNetworkOnly() {
-    const privateKey = loom.CryptoUtils.generatePrivateKey()
+  setNetworkOnly(_privateKey = null) {
+    const privateKey = _privateKey ? _privateKey : loom.CryptoUtils.generatePrivateKey()
     this.loomProvider = new loom.LoomProvider(this.client, privateKey)
   }
 
