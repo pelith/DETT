@@ -47,38 +47,51 @@ const main = async (_dett) => {
         $("#prevpage").addClass('disabled')
         $("#nextpage").removeClass('disabled')
         $("#nextpage").attr('href', root+'?p=2')
-        articles = await dett.getArticles({toBlock: milestones[0]})
+        articles = await dett.getCachedArticles({toBlock: milestones[0], p: p})
+        if (!articles)
+          articles = await dett.getArticles({toBlock: milestones[0]})
       }
       else if (_p === milestones.length) { // last page
         addAnnouncement = true
         $("#prevpage").attr('href', root+'?p='+(milestones.length-1))
-        articles = await dett.getArticles({fromBlock: milestones[milestones.length-1]})
+        articles = await dett.getCachedArticles({fromBlock: milestones[milestones.length-1], p: p})
+        if (!articles)
+          articles = await dett.getArticles({fromBlock: milestones[milestones.length-1]})
       }
       else {
         $("#prevpage").attr('href', root+'?p='+(_p-1))
         $("#nextpage").removeClass('disabled')
         $("#nextpage").attr('href', root+'?p='+(_p+1))
-        articles = await dett.getArticles({fromBlock: milestones[_p-1], toBlock: milestones[_p]})
+        articles = await dett.getCachedArticles({fromBlock: milestones[_p-1], toBlock: milestones[_p], p: p})
+        if (!articles)
+          articles = await dett.getArticles({fromBlock: milestones[_p-1], toBlock: milestones[_p]})
       }
     }
     else {
       addAnnouncement = true
       window.history.replaceState("", "", "/")
       $("#prevpage").attr('href', root+'?p='+(milestones.length-1))
-      articles = await dett.getArticles({fromBlock: milestones[milestones.length-1]})
+      articles = await dett.getCachedArticles({fromBlock: milestones[milestones.length-1], p: p})
     }
   }
   else { // if no milestones show all article
     $("#prevpage").addClass('disabled')
     $("#nextpage").addClass('disabled')
-    articles = await dett.getArticles()
+    articles = await dett.getCachedArticles()
   }
 
   // console.log(articles)
 
-  await articles.reduce( async (n,p) => {
+  await articles[0].reduce( async (n,p) => {
     await n
     directDisplay(...await p)
+  }, Promise.resolve())
+
+  await articles[1].reduce( async (n,p) => {
+    await n
+    const newarticle = await p
+    if (articles[2].indexOf(newarticle[0].transaction.hash) === -1)
+    directDisplay(...newarticle)
   }, Promise.resolve())
 
   // temporary fix announcement
