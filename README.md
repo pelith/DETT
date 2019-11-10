@@ -1,6 +1,4 @@
-# DEXON BBS
-
-[![CircleCI](https://circleci.com/gh/pelith/DEXON_BBS.svg?style=svg)](https://circleci.com/gh/pelith/DEXON_BBS)
+# LOOM BBS
 
 ## Install and develop
 
