@@ -1,5 +1,5 @@
 {
-    "name": "dexon_bbs",
+    "name": "loom_bbs",
     "version": "1.9.4",
     "description": "",
     "scripts": {
@@ -19,7 +19,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/pelith/DEXON_BBS.git"
+        "url": "git+https://github.com/pelith/LOOM_BBS.git"
     },
     "author": [
         "artistic709",

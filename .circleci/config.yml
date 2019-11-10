@@ -15,23 +15,23 @@ jobs:
             git submodule init
             git submodule update --remote
 
-      # Run DEXON_BBS
+      # Run LOOM_BBS
       - restore_cache:
-          name: DEXON_BBS - Restore Yarn Package Cache
+          name: LOOM_BBS - Restore Yarn Package Cache
           keys:
-            - DEXON_BBS-yarn-packages-r3-{{ .Branch }}-{{ checksum "yarn.lock" }}
-            - DEXON_BBS-yarn-packages-r3-{{ .Branch }}-
-            - DEXON_BBS-yarn-packages-r3-
+            - LOOM_BBS-yarn-packages-r3-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - LOOM_BBS-yarn-packages-r3-{{ .Branch }}-
+            - LOOM_BBS-yarn-packages-r3-
       - run:
-          name: DEXON_BBS - Install Dependencies
+          name: LOOM_BBS - Install Dependencies
           command: yarn install --ignore-scripts --frozen-lockfile
       - save_cache:
-          name: DEXON_BBS - Save Yarn Package Cache
-          key: DEXON_BBS-yarn-packages-r3-{{ .Branch }}-{{ checksum "yarn.lock" }}
+          name: LOOM_BBS - Save Yarn Package Cache
+          key: LOOM_BBS-yarn-packages-r3-{{ .Branch }}-{{ checksum "yarn.lock" }}
           paths:
             - ./node_modules
       - run:
-          name: DEXON_BBS - Build
+          name: LOOM_BBS - Build
           command: npm run build
 
       # Run LOOM_BBS_Cache
