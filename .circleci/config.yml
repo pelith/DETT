@@ -34,45 +34,45 @@ jobs:
           name: DEXON_BBS - Build
           command: npm run build
 
-      # Run DEXON_BBS_Cache
+      # Run LOOM_BBS_Cache
       - restore_cache:
-          name: DEXON_BBS_Cache - Restore Yarn Package Cache
+          name: LOOM_BBS_Cache - Restore Yarn Package Cache
           keys:
-            - DEXON_BBS_Cache-yarn-packages-r2-{{ .Branch }}-{{ checksum "./DEXON_BBS_Cache/yarn.lock" }}
-            - DEXON_BBS_Cache-yarn-packages-r2-{{ .Branch }}-
-            - DEXON_BBS_Cache-yarn-packages-r2-
+            - LOOM_BBS_Cache-yarn-packages-r2-{{ .Branch }}-{{ checksum "./LOOM_BBS_Cache/yarn.lock" }}
+            - LOOM_BBS_Cache-yarn-packages-r2-{{ .Branch }}-
+            - LOOM_BBS_Cache-yarn-packages-r2-
       - run:
-          name: DEXON_BBS_Cache - Install Dependencies
-          command: cd ./DEXON_BBS_Cache; yarn install --frozen-lockfile
+          name: LOOM_BBS_Cache - Install Dependencies
+          command: cd ./LOOM_BBS_Cache; yarn install --frozen-lockfile
       - save_cache:
-          name: DEXON_BBS_Cache - Save Yarn Package Cache
-          key: DEXON_BBS_Cache-yarn-packages-r2-{{ .Branch }}-{{ checksum "./DEXON_BBS_Cache/yarn.lock" }}
+          name: LOOM_BBS_Cache - Save Yarn Package Cache
+          key: LOOM_BBS_Cache-yarn-packages-r2-{{ .Branch }}-{{ checksum "./LOOM_BBS_Cache/yarn.lock" }}
           paths:
-            - ./DEXON_BBS_Cache/node_modules
+            - ./LOOM_BBS_Cache/node_modules
       - run:
-          name: DEXON_BBS_Cache - Cache
+          name: LOOM_BBS_Cache - Cache
           command: |
-            cd ./DEXON_BBS_Cache
+            cd ./LOOM_BBS_Cache
             npm run cache
       - restore_cache:
-          name: DEXON_BBS_Cache - Restore dist Cache
+          name: LOOM_BBS_Cache - Restore dist Cache
           keys:
-            - DEXON_BBS_Cache-dist-cache-r15-{{ .Branch }}-{{ checksum "./DEXON_BBS_Cache/dist/output.json" }}
-            - DEXON_BBS_Cache-dist-cache-r15-{{ .Branch }}-
-            - DEXON_BBS_Cache-dist-cache-r15-
+            - LOOM_BBS_Cache-dist-cache-r15-{{ .Branch }}-{{ checksum "./LOOM_BBS_Cache/dist/output.json" }}
+            - LOOM_BBS_Cache-dist-cache-r15-{{ .Branch }}-
+            - LOOM_BBS_Cache-dist-cache-r15-
       - run:
-          name: DEXON_BBS_Cache - Build-Cache
+          name: LOOM_BBS_Cache - Build-Cache
           command: |
-            cd ./DEXON_BBS_Cache
+            cd ./LOOM_BBS_Cache
             ln -s ../build gh-pages
             npm run build-cache
             cp -R ./dist/s gh-pages/
             cp ./dist/sitemap.xml gh-pages/
       - save_cache:
-          name: DEXON_BBS_Cache - Save dist Cache
-          key: DEXON_BBS_Cache-dist-cache-r15-{{ .Branch }}-{{ checksum "./DEXON_BBS_Cache/dist/output.json" }}
+          name: LOOM_BBS_Cache - Save dist Cache
+          key: LOOM_BBS_Cache-dist-cache-r15-{{ .Branch }}-{{ checksum "./LOOM_BBS_Cache/dist/output.json" }}
           paths:
-            - ./DEXON_BBS_Cache/dist
+            - ./LOOM_BBS_Cache/dist
       - deploy:
           name: Deploy to branch gh-pages with "gh-pages" tool
           command: |
