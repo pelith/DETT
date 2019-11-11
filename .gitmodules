@@ -1,4 +1,4 @@
 [submodule "LOOM_BBS_Cache"]
 	path = LOOM_BBS_Cache
-	url = https://github.com/pelith/LOOM_BBS_Cache.git
+	url = git@github.com:pelith/LOOM_BBS_Cache.git
 	branch = master
