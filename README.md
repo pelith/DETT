@@ -1,4 +1,4 @@
-# LOOM BBS
+# LOOM BBS [![Netlify Status](https://api.netlify.com/api/v1/badges/4ea984c1-e99d-45d0-9f4f-57f4086eea40/deploy-status)](https://app.netlify.com/sites/dett/deploys)
 
 ## Install and develop
 
