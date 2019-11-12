@@ -15,6 +15,7 @@ const BBSCacheContract = '0x7145b3b051dcc069134d4a379935eae058bcffb7'
 
 const defaultCaller = '0x7c9CB363cf3202fC3BC8CDC08daAfC8f54DD12E1'
 const fromBlock = '14440294'
+let currentHeight = null
 const titleLength = 40
 const commentLength = 56
 const perPageLength = 20
@@ -161,6 +162,8 @@ class Dett extends EventEmitter {
 
     // constant
     this.fromBlock = fromBlock
+    this.currentHeight = null
+    this.step = 10000
     this.commentLength = commentLength
     this.titleLength = titleLength
     this.perPageLength = perPageLength
@@ -187,6 +190,8 @@ class Dett extends EventEmitter {
       this.initR(loomWeb3)
       this.initW(loomWeb3)
       this.initC(loomWeb3)
+      currentHeight = await loomWeb3.eth.getBlockNumber()
+      this.currentHeight = currentHeight
     }
   }
 
@@ -223,8 +228,7 @@ class Dett extends EventEmitter {
     if (!cacheData) return [await this.getArticles({fromBlock, toBlock}),[],[]]
     let newArticles = null
     if (_page == 1) {
-      const currentHeight = await loomWeb3.eth.getBlockNumber()
-      newArticles = await this.getArticles({fromBlock: currentHeight*1-100000+''})
+      newArticles = await this.getArticles({fromBlock: currentHeight*1-this.step+''})
     }
 
     const articles = await cacheData.map(async (transactionHash) => {
@@ -240,11 +244,22 @@ class Dett extends EventEmitter {
     return [articles, newArticles, cacheData]
   }
 
+  async mergedArticles(articles = [], fromBlock = '14440294', toBlock = 'latest') {
+    const temp = await this.BBS.getPastEvents('Posted', {fromBlock : fromBlock, toBlock: toBlock})
+    articles = articles.concat(temp)
+    console.log(`from ${fromBlock} to ${toBlock}, size: ${articles.length}`)
+    return articles
+  }
+
   async getArticles({fromBlock = null, toBlock = null} = {}){
     const _fromBlock = fromBlock ? fromBlock.split('-')[0] : this.fromBlock
     const _toBlock = toBlock ? toBlock.split('-')[0] : 'latest'
 
-    this.BBSEvents = await this.BBS.getPastEvents('Posted', {fromBlock : _fromBlock, toBlock: _toBlock})
+    this.BBSEvents = []
+    for (let start = fromBlock*1 ; start < currentHeight ; start+=(this.step+1)) {
+      this.BBSEvents = await this.mergedArticles(this.BBSEvents, start, start+this.step)
+    }
+    // this.BBSEvents = await this.BBS.getPastEvents('Posted', {fromBlock : _fromBlock, toBlock: _toBlock})
     // console.log(this.BBSEvents)
 
     if (fromBlock)
@@ -306,8 +321,42 @@ class Dett extends EventEmitter {
     return await this.BBSAdmin.methods.banned(tx).call({ from: defaultCaller })
   }
 
-  async getComments(tx){
-    const events = await this.BBS.getPastEvents('Replied', {fromBlock : this.fromBlock})
+  loadCommentCache(_tx) {
+    const url = window.location.origin
+    return fetch(`${url}/c/${_tx}.json`, { method: 'get' }).then(res => {
+      return res.json()
+    }).then((jsonData) => {
+      return jsonData
+    }).catch((error) => {
+      return false
+    })
+  }
+
+  async getCachedComments(tx) {
+    let cacheEvents = await this.loadCommentCache(tx)
+    if (!cacheEvents) return false
+    const newComments = await this.getComments(tx, currentHeight*1-this.step+'')
+
+    return [cacheEvents, newComments]
+  }
+
+  async mergedComments(comments = [], fromBlock = '14440294', toBlock = 'latest') {
+    const temp = await this.BBS.getPastEvents('Replied', {fromBlock : fromBlock, toBlock: toBlock})
+    comments = comments.concat(temp)
+    console.log(`from ${fromBlock} to ${toBlock}, size: ${comments.length}`)
+    return comments
+  }
+
+  async getComments(tx, fromBlock = null) {
+    if (!fromBlock) {
+      const txContent = await loomWeb3.eth.getTransaction(tx)
+      fromBlock = txContent.blockNumber
+    }
+
+    let events = []
+    for (let start = fromBlock*1 ; start < currentHeight ; start+=(this.step+1)) {
+      events = await this.mergedComments(events, start, start+this.step)
+    }
 
     return events.filter((event) => {return tx == event.returnValues.origin}).map(async (event) => {
       const [comment] = await Promise.all([

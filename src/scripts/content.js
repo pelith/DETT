@@ -300,11 +300,29 @@ const main = async (_dett) => {
   renderArticle(article, isPreRendered)
 
   // // render Comments
-  const comments = await dett.getComments(tx)
-  comments.reduce( async (n,p) => {
-    await n
-    displayReply(...await p)
-  }, Promise.resolve())
+  let comments = await dett.getCachedComments(tx)
+  let cachedComments = []
+
+  if (comments) {
+    await comments[0].reduce((n,p) => {
+      cachedComments = cachedComments.concat(p.tx)
+      displayReply(p)
+    }, Promise.resolve())
+
+    await comments[1].reduce( async (n,p) => {
+      await n
+      const newComments = await p
+      if (cachedComments.indexOf(newComments[0].transaction.hash) === -1)
+        displayReply(...newComments)
+    }, Promise.resolve())
+  }
+  else {
+    comments = await dett.getComments(tx)
+    await comments.reduce( async (n,p) => {
+      await n
+      displayReply(...await p)
+    }, Promise.resolve())
+  }
 
   // hotkey mode
   if (+window.localStorage.getItem('hotkey-mode')) keyboardHook()
