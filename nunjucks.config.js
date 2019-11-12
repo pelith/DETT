@@ -4,7 +4,7 @@ module.exports = {
   root: './src',
   data: {
     showTopbar: true,
-    title: 'LOOM BBS',
+    title: 'DETT',
     description: '基於 LOOM 智慧合約的 BBS 系統' ,
     canonicalUrl,
   },

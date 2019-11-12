@@ -1,4 +1,4 @@
-[submodule "LOOM_BBS_Cache"]
-	path = LOOM_BBS_Cache
-	url = git@github.com:pelith/LOOM_BBS_Cache.git
+[submodule "DETT_Cache"]
+	path = DETT_Cache
+	url = git@github.com:pelith/DETT_Cache.git
 	branch = master

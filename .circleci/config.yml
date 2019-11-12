@@ -15,64 +15,64 @@ jobs:
             git submodule init
             git submodule update --remote
 
-      # Run LOOM_BBS
+      # Run DETT
       - restore_cache:
-          name: LOOM_BBS - Restore Yarn Package Cache
+          name: DETT - Restore Yarn Package Cache
           keys:
-            - LOOM_BBS-yarn-packages-r3-{{ .Branch }}-{{ checksum "yarn.lock" }}
-            - LOOM_BBS-yarn-packages-r3-{{ .Branch }}-
-            - LOOM_BBS-yarn-packages-r3-
+            - DETT-yarn-packages-r3-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - DETT-yarn-packages-r3-{{ .Branch }}-
+            - DETT-yarn-packages-r3-
       - run:
-          name: LOOM_BBS - Install Dependencies
+          name: DETT - Install Dependencies
           command: yarn install --ignore-scripts --frozen-lockfile
       - save_cache:
-          name: LOOM_BBS - Save Yarn Package Cache
-          key: LOOM_BBS-yarn-packages-r3-{{ .Branch }}-{{ checksum "yarn.lock" }}
+          name: DETT - Save Yarn Package Cache
+          key: DETT-yarn-packages-r3-{{ .Branch }}-{{ checksum "yarn.lock" }}
           paths:
             - ./node_modules
       - run:
-          name: LOOM_BBS - Build
+          name: DETT - Build
           command: npm run build
 
-      # Run LOOM_BBS_Cache
+      # Run DETT_Cache
       - restore_cache:
-          name: LOOM_BBS_Cache - Restore Yarn Package Cache
+          name: DETT_Cache - Restore Yarn Package Cache
           keys:
-            - LOOM_BBS_Cache-yarn-packages-r2-{{ .Branch }}-{{ checksum "./LOOM_BBS_Cache/yarn.lock" }}
-            - LOOM_BBS_Cache-yarn-packages-r2-{{ .Branch }}-
-            - LOOM_BBS_Cache-yarn-packages-r2-
+            - DETT_Cache-yarn-packages-r2-{{ .Branch }}-{{ checksum "./DETT_Cache/yarn.lock" }}
+            - DETT_Cache-yarn-packages-r2-{{ .Branch }}-
+            - DETT_Cache-yarn-packages-r2-
       - run:
-          name: LOOM_BBS_Cache - Install Dependencies
-          command: cd ./LOOM_BBS_Cache; yarn install --frozen-lockfile
+          name: DETT_Cache - Install Dependencies
+          command: cd ./DETT_Cache; yarn install --frozen-lockfile
       - save_cache:
-          name: LOOM_BBS_Cache - Save Yarn Package Cache
-          key: LOOM_BBS_Cache-yarn-packages-r2-{{ .Branch }}-{{ checksum "./LOOM_BBS_Cache/yarn.lock" }}
+          name: DETT_Cache - Save Yarn Package Cache
+          key: DETT_Cache-yarn-packages-r2-{{ .Branch }}-{{ checksum "./DETT_Cache/yarn.lock" }}
           paths:
-            - ./LOOM_BBS_Cache/node_modules
+            - ./DETT_Cache/node_modules
       - run:
-          name: LOOM_BBS_Cache - Cache
+          name: DETT_Cache - Cache
           command: |
-            cd ./LOOM_BBS_Cache
+            cd ./DETT_Cache
             npm run cache
       - restore_cache:
-          name: LOOM_BBS_Cache - Restore dist Cache
+          name: DETT_Cache - Restore dist Cache
           keys:
-            - LOOM_BBS_Cache-dist-cache-r15-{{ .Branch }}-{{ checksum "./LOOM_BBS_Cache/dist/output.json" }}
-            - LOOM_BBS_Cache-dist-cache-r15-{{ .Branch }}-
-            - LOOM_BBS_Cache-dist-cache-r15-
+            - DETT_Cache-dist-cache-r15-{{ .Branch }}-{{ checksum "./DETT_Cache/dist/output.json" }}
+            - DETT_Cache-dist-cache-r15-{{ .Branch }}-
+            - DETT_Cache-dist-cache-r15-
       - run:
-          name: LOOM_BBS_Cache - Build-Cache
+          name: DETT_Cache - Build-Cache
           command: |
-            cd ./LOOM_BBS_Cache
+            cd ./DETT_Cache
             ln -s ../build gh-pages
             npm run build-cache
             cp -R ./dist/s gh-pages/
             cp ./dist/sitemap.xml gh-pages/
       - save_cache:
-          name: LOOM_BBS_Cache - Save dist Cache
-          key: LOOM_BBS_Cache-dist-cache-r15-{{ .Branch }}-{{ checksum "./LOOM_BBS_Cache/dist/output.json" }}
+          name: DETT_Cache - Save dist Cache
+          key: DETT_Cache-dist-cache-r15-{{ .Branch }}-{{ checksum "./DETT_Cache/dist/output.json" }}
           paths:
-            - ./LOOM_BBS_Cache/dist
+            - ./DETT_Cache/dist
       - deploy:
           name: Deploy to branch gh-pages with "gh-pages" tool
           command: |
