@@ -163,7 +163,7 @@ class Dett extends EventEmitter {
     // constant
     this.fromBlock = fromBlock
     this.currentHeight = null
-    this.step = 10000
+    this.step = 20
     this.commentLength = commentLength
     this.titleLength = titleLength
     this.perPageLength = perPageLength
