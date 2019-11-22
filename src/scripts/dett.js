@@ -295,6 +295,7 @@ class Dett extends EventEmitter {
     const article = new Article(transaction, rawContent)
     await article.init()
 
+    /*
     if (checkEdited) {
       let events = []
       for (let start = fromBlock*1 ; start < currentHeight ; start+=(this.step+1)) {
@@ -304,6 +305,7 @@ class Dett extends EventEmitter {
       const edits = this.BBSEditEvents.filter(event => event.returnValues.origin === tx )
       if (edits.length >0) await article.initEdits(edits)
     }
+  `*/
 
     return article
   }

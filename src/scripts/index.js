@@ -121,7 +121,7 @@ const articleAttachDropdown = () => {
     // check show article-edit condition
     const selectedArticleAuthor = $(e.target).parent().parent().children(".author").children().attr("data-address")
     if (selectedArticleAuthor.toLowerCase() === dett.account.toLowerCase()) {
-      $(e.target).parent().children(".dropdown").children(".article-edit").show()
+      // $(e.target).parent().children(".dropdown").children(".article-edit").show()
     } else {
       $(e.target).parent().children(".dropdown").children(".article-edit").hide()
     }
