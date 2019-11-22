@@ -244,11 +244,11 @@ class Dett extends EventEmitter {
     return [articles, newArticles, cacheData]
   }
 
-  async mergedArticles(articles = [], fromBlock = '14440294', toBlock = 'latest') {
-    const temp = await this.BBS.getPastEvents('Posted', {fromBlock : fromBlock, toBlock: toBlock})
-    articles = articles.concat(temp)
-    console.log(`from ${fromBlock} to ${toBlock}, size: ${articles.length}`)
-    return articles
+  async mergedEvents(eventName, events = [], fromBlock = '14440294', toBlock = 'latest') {
+    const temp = await this.BBS.getPastEvents(eventName, {fromBlock : fromBlock, toBlock: toBlock})
+    events = events.concat(temp)
+    console.log(`from ${fromBlock} to ${toBlock}, size: ${events.length}`)
+    return events
   }
 
   async getArticles({fromBlock = null, toBlock = null} = {}){
@@ -257,7 +257,7 @@ class Dett extends EventEmitter {
 
     this.BBSEvents = []
     for (let start = fromBlock*1 ; start < currentHeight ; start+=(this.step+1)) {
-      this.BBSEvents = await this.mergedArticles(this.BBSEvents, start, start+this.step)
+      this.BBSEvents = await this.mergedEvents('Posted', this.BBSEvents, start, start+this.step)
     }
     // this.BBSEvents = await this.BBS.getPastEvents('Posted', {fromBlock : _fromBlock, toBlock: _toBlock})
     // console.log(this.BBSEvents)
@@ -296,7 +296,11 @@ class Dett extends EventEmitter {
     await article.init()
 
     if (checkEdited) {
-      this.BBSEditEvents = await this.BBS.getPastEvents('Edited', {fromBlock : this.fromBlock})
+      let events = []
+      for (let start = fromBlock*1 ; start < currentHeight ; start+=(this.step+1)) {
+        this.BBSEditEvents = await this.mergedEvents('Edited', events, start, start+this.step)
+      }
+
       const edits = this.BBSEditEvents.filter(event => event.returnValues.origin === tx )
       if (edits.length >0) await article.initEdits(edits)
     }
@@ -340,13 +344,6 @@ class Dett extends EventEmitter {
     return [cacheEvents, newComments]
   }
 
-  async mergedComments(comments = [], fromBlock = '14440294', toBlock = 'latest') {
-    const temp = await this.BBS.getPastEvents('Replied', {fromBlock : fromBlock, toBlock: toBlock})
-    comments = comments.concat(temp)
-    console.log(`from ${fromBlock} to ${toBlock}, size: ${comments.length}`)
-    return comments
-  }
-
   async getComments(tx, fromBlock = null) {
     if (!fromBlock) {
       const txContent = await loomWeb3.eth.getTransaction(tx)
@@ -355,7 +352,7 @@ class Dett extends EventEmitter {
 
     let events = []
     for (let start = fromBlock*1 ; start < currentHeight ; start+=(this.step+1)) {
-      events = await this.mergedComments(events, start, start+this.step)
+      events = await this.mergedEvents('Replied', events, start, start+this.step)
     }
 
     return events.filter((event) => {return tx == event.returnValues.origin}).map(async (event) => {
