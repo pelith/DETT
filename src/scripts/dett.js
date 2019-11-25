@@ -289,7 +289,7 @@ class Dett extends EventEmitter {
     }
     else {
       const transactionReceipt = await loomWeb3.eth.getTransactionReceipt(tx)
-      rawContent = loomWeb3.utils.hexToUtf8('0x' + transactionReceipt.logs[0].data.slice(130, -6))
+      rawContent = loomWeb3.utils.hexToUtf8('0x' + transactionReceipt.logs[0].data.slice(130))
     }
 
     const article = new Article(transaction, rawContent)
